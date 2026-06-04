@@ -28,7 +28,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-gradient-to-r from-white/90 to-[#F5A623]/90 backdrop-blur-lg border-b border-[#1A1A5E]/15 sticky top-0 z-[300] shadow-sm text-[#1A1A5E]">
+    <header className="bg-[#fff200] border-b border-[#1A1A5E]/15 sticky top-0 z-[300] shadow-sm text-[#1A1A5E]">
       <div className="max-w-[1248px] mx-auto px-4 lg:px-6 h-14 flex items-center justify-between gap-4">
         
         {/* Logo area */}
@@ -40,7 +40,7 @@ export default function Header() {
           />
           <Link to="/" className="flex flex-col items-start shrink-0 text-[#1A1A5E]">
             <span className="font-bold text-xl italic tracking-tight text-[#1A1A5E]">Hunter</span>
-            <span className="text-[10px] text-[#E08B00] -mt-1 font-bold hover:underline flex items-center gap-0.5">
+            <span className="text-[10px] text-[#1A1A5E]/80 -mt-1 font-extrabold hover:underline flex items-center gap-0.5">
               Mens & Juniors
             </span>
           </Link>
@@ -270,7 +270,7 @@ export default function Header() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed top-0 right-0 w-[300px] h-full bg-gradient-to-r from-white/70 to-[#F5A623]/70 backdrop-blur-lg border-l border-white/30 shadow-[0_0_50px_rgba(0,0,0,0.15)] flex flex-col z-[260] overflow-y-auto"
+            className="fixed top-0 right-0 w-[300px] h-full bg-[#fff200] border-l border-white/30 shadow-[0_0_50px_rgba(0,0,0,0.15)] flex flex-col z-[260] overflow-y-auto"
           >
             {/* Header Area */}
             <div className="p-6 flex items-center justify-between border-b border-[#1A1A5E]/10 bg-[#1A1A5E]/5">

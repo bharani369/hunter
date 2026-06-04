@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { 
   User as UserIcon, 
   ShoppingBag, 
@@ -17,7 +19,11 @@ import {
   FileText, 
   Package, 
   Trash2,
-  Calendar
+  Calendar,
+  Crown,
+  Award,
+  Gift,
+  Sparkles
 } from 'lucide-react';
 import { WA_PHONE } from '../data';
 
@@ -30,6 +36,7 @@ interface CustomProfile {
   phone: string;
   email: string;
   gender: 'male' | 'female' | '';
+  loyaltyPoints?: number;
 }
 
 export default function Account() {
@@ -49,46 +56,76 @@ export default function Account() {
     phone: '',
     email: '',
     gender: '',
+    loyaltyPoints: 0,
   });
 
-  // Load profile from local storage or firebase user
+  // Load profile from firestore or local storage
   useEffect(() => {
-    const saved = localStorage.getItem(LOCAL_PROFILE_KEY);
-    if (saved) {
-      try {
-        setProfile(JSON.parse(saved));
-      } catch (e) {
-        console.error(e);
+    let active = true;
+    const fetchProfile = async () => {
+      if (user) {
+        try {
+          const docRef = doc(db, 'users', user.uid);
+          const snap = await getDoc(docRef);
+          if (snap.exists() && active) {
+            const data = snap.data() as CustomProfile;
+            setProfile(data);
+            localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(data));
+            return;
+          }
+        } catch (error) {
+          console.error("Error fetching profile from Firestore", error);
+        }
       }
-    } else if (user) {
-      const names = user.displayName?.split(' ') || ['Guest', 'Hunter'];
-      setProfile({
-        firstName: names[0] || 'Guest',
-        lastName: names.slice(1).join(' ') || 'Hunter',
-        phone: user.phoneNumber || '',
-        email: user.email || '',
-        gender: '',
-      });
-    }
+
+      // Fallback to local storage or defaults
+      const saved = localStorage.getItem(LOCAL_PROFILE_KEY);
+      if (saved && active) {
+        try {
+          setProfile(JSON.parse(saved));
+        } catch (e) {
+          console.error(e);
+        }
+      } else if (user && active) {
+        const names = user.displayName?.split(' ') || ['Guest', 'Hunter'];
+        setProfile({
+          firstName: names[0] || 'Guest',
+          lastName: names.slice(1).join(' ') || 'Hunter',
+          phone: user.phoneNumber || '',
+          email: user.email || '',
+          gender: '',
+          loyaltyPoints: 0,
+        });
+      }
+    };
+
+    fetchProfile();
+    return () => {
+      active = false;
+    };
   }, [user]);
 
-  // If user log in, sync profile fields
-  useEffect(() => {
-    if (user && !localStorage.getItem(LOCAL_PROFILE_KEY)) {
-      const names = user.displayName?.split(' ') || ['Guest', 'Hunter'];
-      setProfile({
-        firstName: names[0] || 'Guest',
-        lastName: names.slice(1).join(' ') || 'Hunter',
-        phone: user.phoneNumber || '',
-        email: user.email || '',
-        gender: '',
-      });
-    }
-  }, [user]);
-
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(profile));
+
+    // Save/update to firestore if logged in
+    if (user) {
+      try {
+        const docRef = doc(db, 'users', user.uid);
+        await setDoc(docRef, {
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          phone: profile.phone,
+          email: profile.email,
+          gender: profile.gender,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (error) {
+        console.error("Error saving profile to Firestore", error);
+      }
+    }
+
     setIsEditing(false);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
@@ -258,6 +295,126 @@ export default function Account() {
                   <div className="mb-6 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-sm text-sm font-semibold flex items-center gap-2">
                     <Check className="w-5 h-5 text-emerald-600" />
                     <span>Profile updated successfully! Information saved locally.</span>
+                  </div>
+                )}
+
+                {/* LOYALTY POINTS SYSTEM CARD */}
+                {user ? (
+                  <div id="hunter-loyalty-panel" className="mb-8 overflow-hidden rounded-xl border border-amber-300 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-5 sm:p-6 shadow-md relative">
+                    {/* Decorative background shape */}
+                    <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none" />
+                    
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex items-start gap-4">
+                        {/* Points Icon badge */}
+                        <div className="p-3.5 bg-[#1A1A5E] text-[#fff200] rounded-xl shadow-md border border-[#fff200]/20 shrink-0">
+                          <Crown className="w-6 h-6 animate-pulse" />
+                        </div>
+                        
+                        <div>
+                          {/* Title & Badge */}
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <h4 className="text-sm font-black uppercase tracking-wider text-[#1A1A5E]">
+                              Hunter Loyalty Program
+                            </h4>
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-100 border border-amber-300 rounded-full text-[10px] font-bold text-amber-800">
+                              <Sparkles className="w-3 h-3 text-amber-600" />
+                              {profile.loyaltyPoints && profile.loyaltyPoints >= 1000 ? 'Platinum Tier' : profile.loyaltyPoints && profile.loyaltyPoints >= 500 ? 'Gold Tier' : profile.loyaltyPoints && profile.loyaltyPoints >= 200 ? 'Silver Tier' : 'Bronze Hunter'}
+                            </span>
+                          </div>
+                          
+                          {/* Main points balance display */}
+                          <div className="mt-1 flex items-baseline gap-1.5">
+                            <span className="text-3xl font-black text-[#1A1A5E] tracking-tight">{profile.loyaltyPoints || 0}</span>
+                            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Available Points</span>
+                          </div>
+                          
+                          <p className="text-[11px] text-gray-400 mt-1.5 font-bold">
+                            💡 You earn <span className="text-amber-600 font-black">1 Point for every ₹10 spent</span> on Hunter outfits.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Secondary button or quick info */}
+                      <div className="text-right sm:border-l sm:border-gray-200 sm:pl-6 shrink-0 flex flex-col justify-center">
+                        <p className="text-[10px] uppercase font-black tracking-widest text-[#1A1A5E]">Redeem Value</p>
+                        <p className="text-lg font-black text-emerald-600">₹{Math.floor((profile.loyaltyPoints || 0) * 0.1)} Off</p>
+                        <p className="text-[9px] text-gray-400 font-bold mt-0.5">Redeemable in-store or WhatsApp</p>
+                      </div>
+                    </div>
+
+                    {/* Progress indicator or milestones thresholds */}
+                    <div className="mt-6 pt-5 border-t border-gray-100">
+                      <p className="text-[11px] font-extrabold uppercase text-[#1A1A5E] mb-3 flex items-center gap-1.5">
+                        <Gift className="w-3.5 h-3.5 text-amber-600" /> Exclusive Rewards & Milestones
+                      </p>
+                      
+                      {/* Milestones Horizontal List */}
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+                        {/* Milestone 50 points */}
+                        <div className={`p-3 rounded-lg border flex flex-col justify-between transition-all duration-300 ${ (profile.loyaltyPoints || 0) >= 50 ? 'bg-emerald-50/70 border-emerald-300 text-emerald-800' : 'bg-gray-50/50 border-gray-100 text-gray-400' }`}>
+                          <div>
+                            <p className="font-extrabold text-[10px] tracking-wider uppercase">50 Points</p>
+                            <p className="font-semibold text-[11px] mt-0.5">Collar Stays / Buttons</p>
+                          </div>
+                          <div className="mt-2 text-[10px] font-black flex items-center gap-1 bg-white/60 px-1.5 py-0.5 rounded w-fit">
+                            { (profile.loyaltyPoints || 0) >= 50 ? '✔️ Unlocked' : '🔒 Locked' }
+                          </div>
+                        </div>
+
+                        {/* Milestone 100 points */}
+                        <div className={`p-3 rounded-lg border flex flex-col justify-between transition-all duration-300 ${ (profile.loyaltyPoints || 0) >= 100 ? 'bg-emerald-50/70 border-emerald-300 text-emerald-800' : 'bg-gray-50/50 border-gray-100 text-gray-400' }`}>
+                          <div>
+                            <p className="font-extrabold text-[10px] tracking-wider uppercase">100 Points</p>
+                            <p className="font-semibold text-[11px] mt-0.5">Extra ₹100 Off coupon</p>
+                          </div>
+                          <div className="mt-2 text-[10px] font-black flex items-center gap-1 bg-white/60 px-1.5 py-0.5 rounded w-fit">
+                            { (profile.loyaltyPoints || 0) >= 100 ? '✔️ Unlocked' : '🔒 Locked' }
+                          </div>
+                        </div>
+
+                        {/* Milestone 250 points */}
+                        <div className={`p-3 rounded-lg border flex flex-col justify-between transition-all duration-300 ${ (profile.loyaltyPoints || 0) >= 250 ? 'bg-emerald-50/70 border-emerald-300 text-emerald-800' : 'bg-gray-50/50 border-gray-100 text-gray-400' }`}>
+                          <div>
+                            <p className="font-extrabold text-[10px] tracking-wider uppercase">250 Points</p>
+                            <p className="font-semibold text-[11px] mt-0.5">Free Celebration Mug</p>
+                          </div>
+                          <div className="mt-2 text-[10px] font-black flex items-center gap-1 bg-white/60 px-1.5 py-0.5 rounded w-fit">
+                            { (profile.loyaltyPoints || 0) >= 250 ? '✔️ Unlocked' : '🔒 Locked' }
+                          </div>
+                        </div>
+
+                        {/* Milestone 500 points */}
+                        <div className={`p-3 rounded-lg border flex flex-col justify-between transition-all duration-300 ${ (profile.loyaltyPoints || 0) >= 500 ? 'bg-emerald-50/70 border-emerald-300 text-emerald-800' : 'bg-gray-50/50 border-gray-100 text-gray-400' }`}>
+                          <div>
+                            <p className="font-extrabold text-[10px] tracking-wider uppercase">500 Points</p>
+                            <p className="font-semibold text-[11px] mt-0.5">Custom Styling Session</p>
+                          </div>
+                          <div className="mt-2 text-[10px] font-black flex items-center gap-1 bg-white/60 px-1.5 py-0.5 rounded w-fit">
+                            { (profile.loyaltyPoints || 0) >= 500 ? '✔️ Unlocked' : '🔒 Locked' }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div id="hunter-loyalty-guest" className="mb-8 p-5 bg-blue-50/50 border border-blue-200 rounded-xl flex items-start gap-4">
+                    <div className="p-3 bg-[#1A1A5E] text-[#fff200] rounded-xl shrink-0">
+                      <Crown className="w-5 h-5 text-[#fff200]" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-[#1A1A5E] uppercase tracking-wider">Start Earning Loyalty Points!</h4>
+                      <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                        Sign up or log into your Hunter account to join our Loyalty program. Unlock exclusive free shirting gifts, ₹100 combo discount coupons, and premium styling treats as you shop!
+                      </p>
+                      <button
+                        type="button"
+                        onClick={showLogin}
+                        className="mt-3 bg-[#1A1A5E] hover:bg-[#1A1A5E]/90 text-white font-black text-[10px] uppercase tracking-wider py-1.5 px-3.5 rounded transition"
+                      >
+                        Sign In Now
+                      </button>
+                    </div>
                   </div>
                 )}
 

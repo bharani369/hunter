@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "An item/clothing style available in the collection.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique product identifier" },
+        "name": { "type": "string", "description": "Product title" },
+        "description": { "type": "string", "description": "Brief product information" },
+        "category": { "type": "string", "description": "Product category e.g. Shirts, Hoodies" },
+        "price": { "type": "number", "description": "Discounted selling price" },
+        "originalPrice": { "type": "number", "description": "Original raw price" },
+        "discount": { "type": "number", "description": "Discount percentage" },
+        "stock": { "type": "number", "description": "Units available in stock" },
+        "rating": { "type": "number", "description": "Average review rating" },
+        "reviews": { "type": "number", "description": "Review count" },
+        "sizes": { "type": "array", "description": "Available size variables" },
+        "tag": { "type": "string", "description": "Promotional or stock label" },
+        "image": { "type": "string", "description": "Main product image asset URL" }
+      },
+      "required": ["id", "name", "category", "price", "originalPrice", "discount", "image"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User details and custom profile settings including loyalty program points.",
+      "type": "object",
+      "properties": {
+        "firstName": { "type": "string", "description": "First name of the user" },
+        "lastName": { "type": "string", "description": "Last name of the user" },
+        "phone": { "type": "string", "description": "Contact number" },
+        "email": { "type": "string", "description": "Email address" },
+        "gender": { "type": "string", "description": "Male or female gender selection", "enum": ["male", "female", ""] },
+        "loyaltyPoints": { "type": "number", "description": "Accumulated loyalty points" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "ISO timestamp of last update" }
+      },
+      "required": ["firstName", "lastName", "email"]
+    }
+  },
+  "firestore": {
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Stock of clothes and products synchronized with frontend"
+    },
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Custom user profile details and accumulated loyalty program points."
+    }
+  }
+}

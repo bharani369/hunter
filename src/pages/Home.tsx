@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { REVIEWS } from '../data';
 import ProductCard from '../components/ProductCard';
 import { useProducts } from '../context/ProductContext';
+import HeroBanner from '../components/HeroBanner';
+import WelcomePopup from '../components/WelcomePopup';
 
 // Add these imports at the top
-import newArrivalsImg from '../assets/images/new_arrivals_3d_1780557638096.png';
 import shirtingImg from '../assets/images/shirting_3d_1780557656110.png';
 import juniorsImg from '../assets/images/juniors_3d_1780557673426.png';
 
@@ -44,6 +45,7 @@ export default function Home() {
 
   return (
     <div className="bg-fk-light w-full min-h-screen">
+      <WelcomePopup />
       <div className="max-w-[1248px] mx-auto px-2 lg:px-4 py-2 lg:py-4 space-y-2 lg:space-y-4">
         
         {/* TOP BANNER */}
@@ -89,28 +91,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* HERO CAROUSEL BANNERS - Simple Version */}
-        <div className="flex gap-2 lg:gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2">
-           {/* Banner 1 */}
-           <div className="shrink-0 w-full sm:w-[80%] lg:w-[66%] h-[180px] lg:h-[280px] bg-gray-900 rounded-sm snap-center flex items-center px-6 lg:px-12 relative overflow-hidden shadow-sm cursor-pointer group">
-              <img src={newArrivalsImg} className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition duration-700" alt="New Arrivals 3D" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"></div>
-              <div className="relative z-10 w-[60%]">
-                <div className="text-fk-yellow font-bold uppercase tracking-wider text-xs lg:text-sm mb-2">New Arrivals Are Here</div>
-                <h2 className="text-2xl lg:text-4xl font-bold text-white mb-4">Elevate Your<br/>Wardrobe</h2>
-                <Link to="/shop" className="bg-white text-fk-blue px-6 py-2 rounded-sm font-semibold text-sm shadow opacity-90 hover:opacity-100 transition inline-block">Shop Now</Link>
-              </div>
-           </div>
-
-           {/* Banner 2 */}
-           <div className="shrink-0 w-full sm:w-[80%] lg:w-[33%] h-[180px] lg:h-[280px] bg-gradient-to-br from-[#E94560] to-[#8E1E32] rounded-sm snap-center flex flex-col justify-center px-6 lg:px-8 relative overflow-hidden shadow-sm cursor-pointer">
-              <div className="relative z-10 text-center">
-                <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2">Buy 2 Get 1</h2>
-                <p className="text-white/80 font-medium mb-4">On Combo Offers</p>
-                <Link to="/shop" className="bg-fk-yellow text-fk-text px-6 py-2 rounded-sm font-bold text-sm shadow inline-block">Shop Combos</Link>
-              </div>
-           </div>
-        </div>
+        {/* HERO CAROUSEL BANNERS - Interactive Premium Version */}
+        <HeroBanner />
 
         {/* DEAL OF THE DAY */}
         <div className="bg-white rounded-sm shadow-sm overflow-hidden mt-4">
@@ -144,26 +126,47 @@ export default function Home() {
         </div>
 
         {/* 2 COLUMN BANNERS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4">
-           <Link to="/shop" className="block bg-gray-900 rounded-sm shadow-sm overflow-hidden aspect-[21/9] md:aspect-[16/6] relative group">
-              <img src={shirtingImg} className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition duration-700" alt="Best Shirting 3D" />
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 via-blue-900/60 to-transparent flex items-center px-6 md:px-10">
-                 <div className="text-white relative z-10 w-[60%]">
-                    <h3 className="text-xl md:text-3xl font-bold mb-2">Best Shirting</h3>
-                    <p className="font-bold text-blue-100 mb-4 bg-white/20 backdrop-blur-sm inline-block px-2 py-1 rounded">Under ₹599</p>
-                    <br/>
-                    <span className="text-xs font-bold uppercase tracking-wider bg-white text-blue-900 shadow-md px-4 py-2 rounded-sm inline-block mt-2">Explore</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+           <Link to="/shop" className="block rounded-lg shadow-md overflow-hidden aspect-[16/9] sm:aspect-[21/9] md:aspect-[16/6] relative group bg-[#102A43] border border-blue-900/25">
+              {/* Background 3D Image on the right side at 70% opacity filling the right side */}
+              <img 
+                 src={shirtingImg} 
+                 alt="Best Shirting 3D Showcase" 
+                 referrerPolicy="no-referrer"
+                 className="absolute right-0 top-0 h-full w-[48%] sm:w-[45%] md:w-[40%] object-contain object-right opacity-70 z-0 select-none pointer-events-none transform group-hover:scale-105 group-hover:-translate-y-1 transition-all duration-700 ease-out" 
+              />
+              {/* Fade in left side: dark blue gradient masking to transparent of the right side */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#102A43] via-[#102A43]/90 md:via-[#102A43]/70 to-transparent z-10 pointer-events-none" />
+              
+              {/* Left Column: Content */}
+              <div className="relative h-full flex flex-col justify-center pl-4 sm:pl-8 md:pl-10 z-20">
+                 <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[#fff200] mb-1">Elite Collection</span>
+                 <h3 className="text-base sm:text-2xl md:text-3xl font-black text-white leading-tight tracking-tight mb-1">Best Shirting</h3>
+                 <p className="font-bold text-[10px] sm:text-sm text-blue-100 bg-white/10 backdrop-blur-sm self-start px-2.5 py-0.5 rounded border border-white/10 mb-3">Under ₹599</p>
+                 <div>
+                    <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider bg-[#fff200] hover:bg-[#fff200]/90 text-[#1A1A5E] hover:shadow-lg px-3 py-1.5 sm:px-4 sm:py-2 rounded-sm transition-all duration-300 inline-block">Explore Collection</span>
                  </div>
               </div>
            </Link>
-           <Link to="/shop" className="block bg-gray-900 rounded-sm shadow-sm overflow-hidden aspect-[21/9] md:aspect-[16/6] relative group">
-              <img src={juniorsImg} className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition duration-700" alt="Juniors Wear 3D" />
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-900/90 via-orange-900/60 to-transparent flex items-center px-6 md:px-10">
-                 <div className="text-white relative z-10 w-[60%]">
-                    <h3 className="text-xl md:text-3xl font-bold mb-2">Juniors Wear</h3>
-                    <p className="font-bold text-orange-100 mb-4 bg-white/20 backdrop-blur-sm inline-block px-2 py-1 rounded">Trending Styles</p>
-                    <br/>
-                    <span className="text-xs font-bold uppercase tracking-wider bg-white text-orange-900 shadow-md px-4 py-2 rounded-sm inline-block mt-2">Explore</span>
+
+           <Link to="/shop" className="block rounded-lg shadow-md overflow-hidden aspect-[16/9] sm:aspect-[21/9] md:aspect-[16/6] relative group bg-[#5C200B] border border-orange-950/20">
+              {/* Background 3D Image on the right side at 70% opacity filling the right side */}
+              <img 
+                 src={juniorsImg} 
+                 alt="Juniors Wear 3D Showcase" 
+                 referrerPolicy="no-referrer"
+                 className="absolute right-0 top-0 h-full w-[48%] sm:w-[45%] md:w-[40%] object-contain object-right opacity-70 z-0 select-none pointer-events-none transform group-hover:scale-105 group-hover:-translate-y-1 transition-all duration-700 ease-out" 
+              />
+              {/* Fade in left side: dark bronze/orange gradient masking to transparent of the right side */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#5C200B] via-[#5C200B]/90 md:via-[#5C200B]/70 to-transparent z-10 pointer-events-none" />
+              
+              {/* Left Column: Content */}
+              <div className="relative h-full flex flex-col justify-center pl-4 sm:pl-8 md:pl-10 z-20">
+                 <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-[#fff200] mb-1">Trending Styles</span>
+                 <h3 className="text-base sm:text-2xl md:text-3xl font-black text-white leading-tight tracking-tight mb-1">Juniors Wear</h3>
+                 <p className="font-bold text-[10px] sm:text-sm text-orange-100 bg-white/10 backdrop-blur-sm self-start px-2.5 py-0.5 rounded border border-white/10 mb-3">Fresh New Arrivals</p>
+                 <div>
+                    <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider bg-[#fff200] hover:bg-[#fff200]/90 text-[#1A1A5E] hover:shadow-lg px-3 py-1.5 sm:px-4 sm:py-2 rounded-sm transition-all duration-300 inline-block">View Kids Store</span>
                  </div>
               </div>
            </Link>

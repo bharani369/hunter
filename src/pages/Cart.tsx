@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { WA_PHONE } from '../data';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 import { useProducts } from '../context/ProductContext';
 import { useToast } from '../components/ToastContainer';
@@ -43,12 +45,36 @@ export default function Cart() {
          }
       }
     }
+
+    // Award Loyalty Points (1 Point per ₹10 spent)
+    let pointsAwardedText = "";
+    if (user && totalDiscounted > 0) {
+      try {
+        const pointsEarned = Math.round(totalDiscounted / 10);
+        const docRef = doc(db, 'users', user.uid);
+        const snap = await getDoc(docRef);
+        let currentPoints = 0;
+        if (snap.exists()) {
+          const uData = snap.data();
+          currentPoints = uData.loyaltyPoints || 0;
+        }
+        const newPoints = currentPoints + pointsEarned;
+        await setDoc(docRef, { loyaltyPoints: newPoints }, { merge: true });
+        pointsAwardedText = `\n\n🎉 *Loyalty Points Earned:* ${pointsEarned} points!`;
+        showToast(`🎉 Earned ${pointsEarned} Loyalty Points! New total: ${newPoints} points.`);
+      } catch (err) {
+        console.error("Error updating loyalty points", err);
+      }
+    }
     
     let msg = `*Hi Hunter! I want to order these items from my Cart:*\n\n`;
     items.forEach((item, index) => {
       msg += `${index + 1}. ${item.name}\nSize: ${item.selectedSize}${item.selectedColour ? `\nColour: ${item.selectedColour}` : ''}\nQty: ${item.quantity}\nPrice: ₹${item.price * item.quantity}\n\n`;
     });
     msg += `*Total Amount:* ₹${totalDiscounted}`;
+    if (pointsAwardedText) {
+      msg += pointsAwardedText;
+    }
     
     if (clearCart) {
       clearCart();

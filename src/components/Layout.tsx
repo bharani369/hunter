@@ -167,7 +167,7 @@ export default function Layout() {
       <ToastContainer />
       
       {/* Mobile Bottom Nav */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 w-full bg-gradient-to-r from-white/70 to-[#F5A623]/70 backdrop-blur-lg border-t border-white/30 z-[180] px-4 py-2 pb-3.5 flex justify-around items-center text-[11px] font-semibold shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 w-full bg-[#fff200] border-t border-white/30 z-[180] px-4 py-2 pb-3.5 flex justify-around items-center text-[11px] font-semibold shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
         <Link 
           to="/" 
           className={`flex flex-col items-center gap-0.5 transition-all duration-200 ${

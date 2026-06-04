@@ -7,6 +7,8 @@ import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from '../context/ProductContext';
 import { useToast } from '../components/ToastContainer';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -99,7 +101,28 @@ export default function ProductDetails() {
        }
     }
 
-    const orderText = `Hi Hunter! I want to order: ${product.name} (Size: ${selectedSize || 'Any'}${selectedColour ? `, Colour: ${selectedColour}` : ''})`;
+    // Award Loyalty Points (1 Point per ₹10 spent)
+    let pointsAwardedText = "";
+    if (user && product.price > 0) {
+      try {
+        const pointsEarned = Math.round(product.price / 10);
+        const docRef = doc(db, 'users', user.uid);
+        const snap = await getDoc(docRef);
+        let currentPoints = 0;
+        if (snap.exists()) {
+          const uData = snap.data();
+          currentPoints = uData.loyaltyPoints || 0;
+        }
+        const newPoints = currentPoints + pointsEarned;
+        await setDoc(docRef, { loyaltyPoints: newPoints }, { merge: true });
+        pointsAwardedText = ` (Points Earned: ${pointsEarned})`;
+        showToast(`🎉 Earned ${pointsEarned} Loyalty Points! New total: ${newPoints} points.`);
+      } catch (err) {
+        console.error("Error updating loyalty points", err);
+      }
+    }
+
+    const orderText = `Hi Hunter! I want to order: ${product.name} (Size: ${selectedSize || 'Any'}${selectedColour ? `, Colour: ${selectedColour}` : ''})${pointsAwardedText}`;
     window.open(`https://wa.me/${WA_PHONE}?text=${encodeURIComponent(orderText)}`, '_blank');
   };
 

@@ -1,0 +1,31 @@
+# netlify.toml - Configuration file for hosting on Netlify
+
+[build]
+  # The directory that contains the deploy-ready assets after compiling
+  publish = "dist"
+
+  # The command Netlify should run to build your React SPA
+  command = "npm run build"
+
+# Redirect rules to enable React SPA client-side routing (prevents 404 on page refreshing)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# Custom headers for optimized loading and security recommendations
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Cache optimized styles and static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
