@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-fk-blue: #1A1A5E;
+  --color-fk-yellow: #F5A623;
+  --color-fk-text: #212121;
+  --color-fk-gray: #878787;
+  --color-fk-light: #F1F3F6;
+  --color-fk-border: #E0E0E0;
+  --color-fk-green: #388E3C;
+  --color-fk-red: #E94560;
+  --color-fk-footer: #172337;
+  --color-wa-green: #25D366;
+  
+  --font-sans: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-heading: "Roboto", sans-serif;
+}
+
+body {
+  @apply bg-fk-light text-fk-text font-sans antialiased;
+}
+
+/* Lenis smooth scrolling styles */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}

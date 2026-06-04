@@ -1,0 +1,8 @@
+{
+  "name": "Hunter Mens & Juniors",
+  "description": "Premium Readymade Garment Retail Store in Tamil Nadu",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
