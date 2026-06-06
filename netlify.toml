@@ -7,6 +7,9 @@
   # The command Netlify should run to build your React SPA
   command = "npm run build"
 
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "VITE_FIREBASE_API_KEY,VITE_FIREBASE_APP_ID,VITE_FIREBASE_AUTH_DOMAIN,VITE_FIREBASE_FIRESTORE_DATABASE_ID,VITE_FIREBASE_MEASUREMENT_ID,VITE_FIREBASE_MESSAGING_SENDER_ID,VITE_FIREBASE_PROJECT_ID,VITE_FIREBASE_STORAGE_BUCKET"
+
 # Redirect rules to enable React SPA client-side routing (prevents 404 on page refreshing)
 [[redirects]]
   from = "/*"
