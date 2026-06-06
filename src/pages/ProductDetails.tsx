@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Star } from 'lucide-react';
+import { ShoppingCart, Heart, Star, Share2, Copy, Check } from 'lucide-react';
 import { WA_PHONE, REVIEWS } from '../data';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -9,6 +9,9 @@ import { useProducts } from '../context/ProductContext';
 import { useToast } from '../components/ToastContainer';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useSEO } from '../hooks/useSEO';
+import RecentlyViewed from '../components/RecentlyViewed';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -25,6 +28,11 @@ export default function ProductDetails() {
   const [deliveryMsg, setDeliveryMsg] = useState('');
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [reviewSort, setReviewSort] = useState('recent');
+  const [shareState, setShareState] = useState<'idle' | 'copied'>('idle');
+
+  const seoTitle = product ? `${product.name} - Buy Online | Hunter` : 'Product Details | Hunter';
+  const seoDesc = product ? `Buy ${product.name} at Hunter. ${product.description ? product.description.substring(0, 100) + '...' : ''}` : 'View product details at Hunter';
+  useSEO(seoTitle, seoDesc);
 
   useEffect(() => {
     if (product?.colours && product.colours.length > 0) {
@@ -34,7 +42,57 @@ export default function ProductDetails() {
     }
   }, [product]);
 
-  if (loading) return <div className="p-20 text-center text-gray-500">Loading product...</div>;
+  useEffect(() => {
+    if (product) {
+      try {
+        const recentlyViewedKey = 'hunter_recently_viewed';
+        const stored = localStorage.getItem(recentlyViewedKey);
+        let viewedIds: string[] = [];
+        if (stored) {
+          viewedIds = JSON.parse(stored);
+          if (!Array.isArray(viewedIds)) {
+            viewedIds = [];
+          }
+        }
+        
+        viewedIds = viewedIds.filter((id) => id !== product.id);
+        viewedIds.unshift(product.id);
+        viewedIds = viewedIds.slice(0, 10);
+        
+        localStorage.setItem(recentlyViewedKey, JSON.stringify(viewedIds));
+      } catch (err) {
+        console.error("Error setting recently viewed history:", err);
+      }
+    }
+  }, [product]);
+
+  if (loading) return (
+    <div className="bg-fk-light min-h-screen py-2 lg:py-4 w-full">
+      <div className="max-w-[1248px] mx-auto px-2 lg:px-4">
+        <div className="bg-white shadow-sm flex flex-col md:flex-row rounded-sm overflow-hidden animate-pulse">
+          <div className="w-full md:w-[40%] border-r border-[#f0f0f0] p-4 lg:p-8 flex flex-col items-center">
+             <div className="w-full aspect-[4/5] bg-gray-200 border border-[#f0f0f0] rounded-sm"></div>
+             <div className="flex gap-2 w-full mt-4">
+               {[...Array(4)].map((_, i) => <div key={i} className="w-16 h-16 shrink-0 bg-gray-200 rounded"></div>)}
+             </div>
+             <div className="flex gap-2 w-full mt-6">
+               <div className="flex-1 h-14 bg-gray-200 rounded-sm"></div>
+               <div className="flex-1 h-14 bg-gray-200 rounded-sm"></div>
+             </div>
+          </div>
+          <div className="w-full md:w-[60%] p-4 lg:p-8 space-y-4">
+             <div className="h-4 bg-gray-200 rounded w-1/3 mb-6"></div>
+             <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+             <div className="h-4 bg-gray-200 rounded w-1/4 mb-6"></div>
+             <div className="h-10 bg-gray-200 rounded w-1/3 mb-6"></div>
+             <div className="h-20 bg-gray-200 rounded w-full mb-6"></div>
+             <div className="h-12 bg-gray-200 rounded w-full mb-2"></div>
+             <div className="h-12 bg-gray-200 rounded w-full"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
   if (!product) return <div className="p-20 text-center">Product not found</div>;
 
   const isWishlisted = isInWishlist(product.id);
@@ -134,6 +192,119 @@ export default function ProductDetails() {
     }
   };
 
+  const fallbackCopyText = (content: string) => {
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = content;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setShareState('copied');
+      setTimeout(() => setShareState('idle'), 3000);
+    } catch (err) {
+      console.error('Fallback copy text execution failed:', err);
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!product) {
+      showToast('Product details are not available yet.');
+      return;
+    }
+
+    const name = product.name || '';
+    const image = product.image || '';
+    const price = product.price;
+    const originalPrice = product.originalPrice;
+    const discount = product.discount;
+    const rating = product.rating;
+
+    if (!name || !image) {
+      showToast('Product information is incomplete and cannot be shared.');
+      return;
+    }
+
+    // Safely resolve the image URL
+    let imageUrl = '';
+    try {
+      imageUrl = image.startsWith('http') 
+        ? image 
+        : `${window.location.origin}${image}`;
+    } catch (e) {
+      console.error("Failed to parse image path:", e);
+      imageUrl = `${window.location.origin}`;
+    }
+
+    // Safely get product page URL
+    const productUrl = window.location.href;
+
+    // Build parts cleanly
+    const namePart = `*${name.trim()}*`;
+    const pricePart = price !== undefined ? `₹${price}` : 'N/A';
+    const discPart = (originalPrice !== undefined && discount !== undefined) 
+      ? ` (From ₹${originalPrice} - ${discount}% Off)` 
+      : '';
+    const ratingPart = rating !== undefined ? `${rating} ★` : 'N/A';
+
+    // Construct the elegant message body
+    const messageLines = [
+      'Check out this amazing style on Hunter Mens & Juniors! 🔥',
+      '',
+      namePart,
+      `💰 *Price:* ${pricePart}${discPart}`,
+      `⭐ *Rating:* ${ratingPart}`,
+      '',
+      `📸 *Product Image:* ${imageUrl}`,
+      '',
+      `👉 *View Product here:* ${productUrl}`
+    ];
+
+    const text = messageLines.join('\n');
+
+    // Copy to clipboard elegantly
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => {
+            setShareState('copied');
+            setTimeout(() => setShareState('idle'), 3000);
+          })
+          .catch((err) => {
+            console.error('Clipboard write failed:', err);
+            fallbackCopyText(text);
+          });
+      } else {
+        fallbackCopyText(text);
+      }
+    } catch (err) {
+      console.error('Clipboard copy API error:', err);
+      fallbackCopyText(text);
+    }
+
+    // Encode properly
+    const encodedText = encodeURIComponent(text);
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+
+    // Safely attempt to launch WhatsApp API URI
+    try {
+      const newWindow = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        const alternativeLink = document.createElement('a');
+        alternativeLink.href = whatsappUrl;
+        alternativeLink.target = '_blank';
+        alternativeLink.rel = 'noopener noreferrer';
+        alternativeLink.click();
+      }
+    } catch (err) {
+      console.error('Error opening WhatsApp share window:', err);
+    }
+  };
+
   return (
     <div className="bg-fk-light min-h-screen py-2 lg:py-4 w-full">
       <div className="max-w-[1248px] mx-auto px-2 lg:px-4">
@@ -165,18 +336,57 @@ export default function ProductDetails() {
              )}
              
              {/* CTA Buttons - Two in row */}
-             <div className="flex gap-2 w-full mt-6">
+             <div className="flex flex-col gap-3 w-full mt-6">
                 <button 
                   onClick={handleAddToCart}
-                  className="flex-1 bg-[#ff9f00] hover:bg-[#fbac21] text-white py-4 rounded-sm font-semibold flex justify-center items-center gap-2 shadow transition"
+                  className="relative overflow-hidden group w-full bg-[#ff9f00] hover:bg-[#fbac21] text-white py-4 rounded-sm font-semibold flex justify-center items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.98]"
                 >
-                  <ShoppingCart className="w-5 h-5 fill-current" /> ADD TO CART
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out"></div>
+                  <ShoppingCart className="w-5 h-5 fill-current relative z-10" /> <span className="relative z-10">ADD TO CART</span>
                 </button>
                 <button 
                   onClick={handleBuyNow}
-                  className="flex-1 bg-[#fb641b] hover:bg-[#ea5c19] text-white py-4 rounded-sm font-semibold flex justify-center items-center gap-2 shadow transition"
+                  className="relative overflow-hidden group w-full bg-[#fb641b] hover:bg-[#ea5c19] text-white py-4 rounded-sm font-semibold flex justify-center items-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.98]"
                 >
-                  <span className="text-xl">⚡</span> BUY NOW
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out"></div>
+                  <span className="text-xl relative z-10">⚡</span> <span className="relative z-10">BUY NOW</span>
+                </button>
+                <button 
+                  onClick={handleShareWhatsApp}
+                  disabled={shareState === 'copied'}
+                  className={`hidden relative overflow-hidden group w-full text-white py-4 rounded-sm font-semibold flex justify-center items-center gap-2 shadow-md hover:shadow-lg transition-all duration-300 active:scale-[0.98] ${
+                    shareState === 'copied' ? 'bg-[#0f766e]' : 'bg-[#25D366] hover:bg-[#20ba5a]'
+                  }`}
+                >
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out"></div>
+                  
+                  <AnimatePresence mode="wait">
+                    {shareState === 'copied' ? (
+                      <motion.span
+                        key="copied-label"
+                        initial={{ opacity: 0, y: 12, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -12, scale: 0.9 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        className="flex items-center gap-2 relative z-10 font-bold"
+                      >
+                        <Check className="w-5 h-5 text-white animate-[bounce_1.5s_infinite]" />
+                        <span>LINK COPIED & SHARE OPENED!</span>
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="share-label"
+                        initial={{ opacity: 0, y: -12, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 12, scale: 0.9 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        className="flex items-center gap-2 relative z-10"
+                      >
+                        <Share2 className="w-5 h-5 animate-[bounce_2s_infinite]" />
+                        <span>SHARE ON WHATSAPP</span>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </button>
              </div>
           </div>
@@ -397,6 +607,9 @@ export default function ProductDetails() {
             ))}
           </div>
         </div>
+
+        {/* Recently Viewed Items */}
+        <RecentlyViewed excludeId={product.id} />
 
       </div>
     </div>

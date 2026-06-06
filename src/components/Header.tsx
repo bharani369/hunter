@@ -48,19 +48,24 @@ export default function Header() {
 
         {/* Centered Desktop Navigation Links */}
         <div className="hidden lg:flex items-center justify-center gap-6 flex-1 font-bold text-[14.5px]">
-          <Link to="/" className="whitespace-nowrap hover:text-[#1A1A5E]/70 transition-all text-[#1A1A5E]">
+          <Link to="/" className="whitespace-nowrap hover:text-[#1A1A5E]/70 transition-all text-[#1A1A5E] flex items-center gap-2">
+            <i className="fa-solid fa-house"></i>
             Home
           </Link>
-          <Link to="/shop" className="whitespace-nowrap hover:text-[#1A1A5E]/70 transition-all text-[#1A1A5E]">
+          <Link to="/shop" className="whitespace-nowrap hover:text-[#1A1A5E]/70 transition-all text-[#1A1A5E] flex items-center gap-2">
+            <i className="fa-solid fa-shop"></i>
             Shop
           </Link>
-          <Link to="/about" className="whitespace-nowrap hover:text-[#1A1A5E]/70 transition-all text-[#1A1A5E]">
+          <Link to="/about" className="whitespace-nowrap hover:text-[#1A1A5E]/70 transition-all text-[#1A1A5E] flex items-center gap-2">
+            <i className="fa-solid fa-circle-info"></i>
             About Us
           </Link>
-          <Link to="/contact" className="whitespace-nowrap hover:text-[#1A1A5E]/70 transition-all text-[#1A1A5E]">
+          <Link to="/contact" className="whitespace-nowrap hover:text-[#1A1A5E]/70 transition-all text-[#1A1A5E] flex items-center gap-2">
+            <i className="fa-solid fa-headset"></i>
             Contact
           </Link>
-          <Link to="/track" className="whitespace-nowrap hover:text-[#1A1A5E]/70 transition-all text-[#1A1A5E]">
+          <Link to="/track" className="whitespace-nowrap hover:text-[#1A1A5E]/70 transition-all text-[#1A1A5E] flex items-center gap-2">
+            <i className="fa-solid fa-truck-fast"></i>
             Track Order
           </Link>
           <Link to="/admin" className="whitespace-nowrap text-[#D97706] font-extrabold hover:bg-[#D97706]/10 px-3 py-1 rounded border border-[#D97706]/20 transition-all">
@@ -71,7 +76,7 @@ export default function Header() {
         {/* Desktop Search & Actions Bar - Right */}
         <div className="hidden lg:flex items-center gap-4 shrink-0 justify-end">
           {/* Search Bar - Desktop */}
-          <div className="relative w-48 xl:w-60" onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}>
+          <div className="relative w-56 xl:w-64" onBlur={() => setTimeout(() => setShowSuggestions(false), 250)}>
             <form onSubmit={handleSearch} className="flex relative items-center w-full shadow-[0_2px_4px_0_rgba(0,0,0,0.06)] bg-white rounded-md h-[34px] border border-gray-200">
               <input 
                 type="text" 
@@ -90,28 +95,79 @@ export default function Header() {
             </form>
 
             {/* Search Suggestions */}
-            {showSuggestions && searchQuery && (
-              <div className="absolute top-[36px] right-0 w-64 bg-white text-fk-text shadow-xl border border-gray-100 rounded-md overflow-hidden z-50">
-                {suggestions.length > 0 ? (
-                  <ul>
-                    {suggestions.map(item => (
-                      <li key={item.id}>
+            <AnimatePresence>
+              {showSuggestions && searchQuery && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-[38px] right-0 w-[320px] sm:w-[350px] bg-white text-fk-text shadow-2xl border border-gray-150 rounded-lg overflow-hidden z-[400]"
+                >
+                  <div className="p-2.5 bg-gray-50 border-b border-gray-100 flex justify-between items-center text-[10px] uppercase tracking-wider font-extrabold text-gray-400">
+                    <span>Products Found ({suggestions.length})</span>
+                    <span>Real-time suggestions</span>
+                  </div>
+                  {suggestions.length > 0 ? (
+                    <div className="max-h-[340px] overflow-y-auto">
+                      {suggestions.map(item => (
                         <Link 
+                          key={item.id}
                           to={`/product/${item.id}`}
-                          className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 border-b border-gray-50 last:border-0"
-                          onClick={() => setShowSuggestions(false)}
+                          className="flex items-center gap-3 px-3 py-2.5 hover:bg-[#1A1A5E]/5 transition-all border-b border-gray-100 last:border-0 group"
+                          onClick={() => {
+                            setSearchQuery('');
+                            setShowSuggestions(false);
+                          }}
                         >
-                          <Search className="w-3 h-3 text-fk-gray" />
-                          <span className="text-xs truncate">{item.name}</span>
+                          <div className="w-10 h-10 rounded bg-gray-100 border border-gray-150 overflow-hidden shrink-0 flex items-center justify-center">
+                            <img 
+                              src={item.image} 
+                              alt={item.name} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-xs font-semibold text-gray-805 group-hover:text-[#1A1A5E] truncate transition-colors">
+                              {item.name}
+                            </h4>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-xs font-bold text-[#1A1A5E]">₹{item.price}</span>
+                              {item.discount > 0 && (
+                                <>
+                                  <span className="text-[10px] text-gray-400 line-through">₹{item.originalPrice}</span>
+                                  <span className="text-[10px] text-[#25D366] font-bold">-{item.discount}%</span>
+                                </>
+                              )}
+                            </div>
+                            <span className="text-[9px] bg-gray-100 text-gray-500 px-1 py-0.2 rounded font-medium mt-1 inline-block">
+                              {item.category}
+                            </span>
+                          </div>
+                          <ChevronDown className="w-4 h-4 text-gray-300 -rotate-90 group-hover:text-[#1A1A5E] group-hover:translate-x-0.5 transition-all" />
                         </Link>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="px-3 py-2.5 text-xs text-fk-gray">No products found</div>
-                )}
-              </div>
-            )}
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-xs text-gray-400 flex flex-col items-center gap-1">
+                      <Search className="w-6 h-6 text-gray-355" />
+                      <span>No matching products found</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate(`/shop?q=${encodeURIComponent(searchQuery)}`);
+                      setShowSuggestions(false);
+                    }}
+                    className="w-full text-center py-2.5 bg-gray-50 hover:bg-gray-100 text-xs text-[#1A1A5E] font-extrabold flex items-center justify-center gap-1.5 transition-colors border-t border-gray-100"
+                  >
+                    <span>See all results for "{searchQuery}"</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {user ? (
@@ -121,10 +177,10 @@ export default function Header() {
                 <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover:rotate-180" />
               </Link>
               <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-gray-100 rounded-sm shadow-xl hidden group-hover:block text-fk-text text-sm overflow-hidden z-50">
-                <Link to="/account" className="block px-4 py-2 hover:bg-gray-50 font-medium border-b border-gray-50 flex items-center gap-2 text-fk-text"><User className="w-4 h-4 text-fk-blue" /> My Profile</Link>
-                <Link to="/account" className="block px-4 py-2 hover:bg-gray-50 font-medium border-b border-gray-50 flex items-center gap-2 text-fk-text"><ShoppingBag className="w-4 h-4 text-fk-blue" /> Orders</Link>
-                <Link to="/wishlist" className="block px-4 py-2 hover:bg-gray-50 font-medium border-b border-gray-50 flex items-center gap-2 text-fk-text"><Heart className="w-4 h-4 text-fk-blue" /> Wishlist</Link>
-                <button onClick={logout} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 font-medium flex items-center gap-2">Logout</button>
+                <Link to="/account" className="block px-4 py-2 hover:bg-gray-50 font-medium border-b border-gray-50 flex items-center gap-2 text-fk-text"><i className="fa-regular fa-user text-fk-blue"></i> My Profile</Link>
+                <Link to="/account" className="block px-4 py-2 hover:bg-gray-50 font-medium border-b border-gray-50 flex items-center gap-2 text-fk-text"><i className="fa-solid fa-bag-shopping text-fk-blue"></i> Orders</Link>
+                <Link to="/wishlist" className="block px-4 py-2 hover:bg-gray-50 font-medium border-b border-gray-50 flex items-center gap-2 text-fk-text"><i className="fa-regular fa-heart text-fk-blue"></i> Wishlist</Link>
+                <button onClick={logout} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 font-medium flex items-center gap-2"><i className="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
               </div>
             </div>
           ) : (
@@ -149,7 +205,7 @@ export default function Header() {
 
           <Link to="/wishlist" className="flex items-center gap-2 hover:text-[#1A1A5E]/80 transition relative text-[#1A1A5E]">
             <span className="relative">
-               <Heart className="w-[18px] h-[18px] stroke-[2.5px]" />
+               <i className="fa-regular fa-heart text-[18px]"></i>
                {wishlistItems.length > 0 && (
                  <span className="absolute -top-2 -right-2 bg-[#1A1A5E] text-white text-[10px] w-[15px] h-[15px] flex items-center justify-center rounded-full font-bold">
                    {wishlistItems.length}
@@ -159,7 +215,7 @@ export default function Header() {
           </Link>
           <Link to="/cart" className="flex items-center gap-2 hover:text-[#1A1A5E]/80 transition relative text-[#1A1A5E]">
             <span className="relative">
-               <ShoppingCart className="w-[18px] h-[18px] fill-[#1A1A5E]" />
+               <i className="fa-solid fa-cart-shopping text-[18px]"></i>
                <span className="absolute -top-2 -right-2 bg-[#1A1A5E] text-white text-[10px] w-[15px] h-[15px] flex items-center justify-center rounded-full font-bold">
                  {cartCount}
                </span>
@@ -171,7 +227,7 @@ export default function Header() {
         {/* Mobile Header icons */}
         <div className="flex lg:hidden items-center gap-4 text-[#1A1A5E]">
            <Link to="/wishlist" className="relative mr-1 hover:scale-105 transition-transform">
-               <Heart className="w-[22px] h-[22px] stroke-[2.5px]" />
+               <i className="fa-regular fa-heart text-[22px]"></i>
                {wishlistItems.length > 0 && (
                  <span className="absolute -top-2 -right-2 bg-[#1A1A5E] text-white text-[10px] w-[15px] h-[15px] flex items-center justify-center rounded-full font-bold">
                    {wishlistItems.length}
@@ -179,19 +235,19 @@ export default function Header() {
                )}
            </Link>
            <Link to="/cart" className="relative mr-1 hover:scale-105 transition-transform">
-               <ShoppingCart className="w-[22px] h-[22px] fill-[#1A1A5E]" />
+               <i className="fa-solid fa-cart-shopping text-[22px]"></i>
                <span className="absolute -top-2 -right-2 bg-[#1A1A5E] text-white text-[10px] w-[15px] h-[15px] flex items-center justify-center rounded-full font-bold">
                  {cartCount}
                </span>
            </Link>
            <button onClick={() => setMobileMenuOpen(true)} className="hover:scale-105 transition-transform active:scale-95">
-             <Menu className="w-6 h-6" />
+             <i className="fa-solid fa-bars text-[24px]"></i>
            </button>
         </div>
       </div>
 
       {/* Mobile Search Bar */}
-      <div className="lg:hidden px-2 pb-2 relative" onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}>
+      <div className="lg:hidden px-2 pb-2 relative" onBlur={() => setTimeout(() => setShowSuggestions(false), 250)}>
          <form onSubmit={handleSearch} className="flex relative items-center w-full bg-white rounded-md h-[36px] shadow-sm border border-gray-200">
            <Search className="w-4 h-4 text-fk-gray absolute left-3" />
            <input 
@@ -208,28 +264,67 @@ export default function Header() {
          </form>
          
          {/* Mobile Search Suggestions */}
-         {showSuggestions && searchQuery && (
-           <div className="absolute top-[40px] left-2 right-2 bg-white text-fk-text shadow-lg border border-gray-100 rounded-sm overflow-hidden z-50">
-             {suggestions.length > 0 ? (
-               <ul>
-                 {suggestions.map(item => (
-                   <li key={item.id}>
+         <AnimatePresence>
+           {showSuggestions && searchQuery && (
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.98, y: 5 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.98, y: 5 }}
+               transition={{ duration: 0.12 }}
+               className="absolute top-[42px] left-2 right-2 bg-white text-fk-text shadow-2xl border border-gray-150 rounded-lg overflow-hidden z-[450]"
+             >
+               <div className="p-2 bg-gray-50 border-b border-gray-100 flex justify-between items-center text-[10px] uppercase tracking-wider font-extrabold text-gray-400">
+                 <span>Items found ({suggestions.length})</span>
+                 <span>Suggestions</span>
+               </div>
+               {suggestions.length > 0 ? (
+                 <div className="max-h-[280px] overflow-y-auto">
+                   {suggestions.map(item => (
                      <Link 
+                       key={item.id}
                        to={`/product/${item.id}`}
-                       className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0"
-                       onClick={() => setShowSuggestions(false)}
+                       className="flex items-center gap-3 px-3 py-2.5 hover:bg-[#1A1A5E]/5 transition-all border-b border-gray-100 last:border-0 group"
+                       onClick={() => {
+                         setSearchQuery('');
+                         setShowSuggestions(false);
+                       }}
                      >
-                       <Search className="w-4 h-4 text-fk-gray" />
-                       <span className="text-sm font-medium">{item.name}</span>
+                       <div className="w-9 h-9 rounded bg-gray-100 border border-gray-150 overflow-hidden shrink-0">
+                         <img 
+                           src={item.image} 
+                           alt={item.name} 
+                           className="w-full h-full object-cover" 
+                           referrerPolicy="no-referrer"
+                         />
+                       </div>
+                       <div className="flex-1 min-w-0">
+                         <h4 className="text-xs font-semibold text-gray-800 truncate">{item.name}</h4>
+                         <div className="flex items-center gap-1.5">
+                           <span className="text-xs font-bold text-[#1A1A5E]">₹{item.price}</span>
+                           {item.discount > 0 && (
+                             <span className="text-[10px] text-[#25D366] font-bold">-{item.discount}% Off</span>
+                           )}
+                         </div>
+                       </div>
                      </Link>
-                   </li>
-                 ))}
-               </ul>
-             ) : (
-               <div className="px-4 py-3 text-sm text-fk-gray">No products found</div>
-             )}
-           </div>
-         )}
+                   ))}
+                 </div>
+               ) : (
+                 <div className="p-6 text-center text-xs text-gray-400">No products found</div>
+               )}
+               <button
+                 type="button"
+                 onClick={() => {
+                   navigate(`/shop?q=${encodeURIComponent(searchQuery)}`);
+                   setShowSuggestions(false);
+                 }}
+                 className="w-full text-center py-2.5 bg-gray-50 hover:bg-gray-100 text-xs text-[#1A1A5E] font-extrabold flex items-center justify-center gap-1.5 transition-colors border-t border-gray-100"
+               >
+                 <span>See all results for "{searchQuery}"</span>
+               </button>
+             </motion.div>
+           )}
+         </AnimatePresence>
       </div>
 
       {/* Mobile Sidebar */}

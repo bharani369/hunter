@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/firestore-error';
 
 export default function TrackOrder() {
   const [orderId, setOrderId] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ status: string; date: string; expected: string } | null>(null);
+  const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleTrack = (e: React.FormEvent) => {
+  const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!orderId.trim() || !phoneNumber.trim()) {
-      setError('Please enter both Order ID and WhatsApp Number.');
+    if (!orderId.trim()) {
+      setError('Please enter your Order ID.');
       setResult(null);
       return;
     }
@@ -20,23 +22,30 @@ export default function TrackOrder() {
     setError(null);
     setResult(null);
 
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      const upperId = orderId.trim().toUpperCase();
-      
-      // Mock logic based on order ID
-      if (upperId.length < 5) {
-        setError('Invalid Order ID format. Please check your WhatsApp confirmation message.');
-        return;
-      }
+    try {
+      const docRef = doc(db, 'orders', orderId.trim());
+      const docSnap = await getDoc(docRef);
 
-      setResult({
-        status: 'Shipped - In Transit',
-        date: new Date(Date.now() - 86400000 * 2).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-        expected: new Date(Date.now() + 86400000 * 2).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-      });
-    }, 800);
+      if (docSnap.exists()) {
+        const orderData = docSnap.data();
+        setResult({
+          status: orderData.status,
+          date: new Date(orderData.datePlaced).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+          expected: orderData.expectedText || 'Delivery in 2-3 days'
+        });
+      } else {
+        setError('Order not found. Please verify your Order ID.');
+      }
+    } catch (err) {
+      setError('Error fetching order. Try again later.');
+      try {
+        handleFirestoreError(err, OperationType.GET, `orders/${orderId.trim()}`);
+      } catch (e) {
+        // Suppress nested bubble
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,7 +58,7 @@ export default function TrackOrder() {
               {/* Tracker Form */}
               <div className="w-full md:w-1/2">
                  <h1 className="text-[22px] font-medium text-[#212121] mb-2">Track Your Order</h1>
-                 <p className="text-[14px] text-fk-gray mb-6">Enter your Order ID (from WhatsApp) to check the current shipping status.</p>
+                 <p className="text-[14px] text-fk-gray mb-6">Enter your Order ID to check the real-time shipping status from our active admin orders list.</p>
                  
                  <form onSubmit={handleTrack} className="space-y-4 text-[14px]">
                     <div>
@@ -58,19 +67,8 @@ export default function TrackOrder() {
                          type="text" 
                          value={orderId}
                          onChange={(e) => setOrderId(e.target.value)}
-                         className="w-full border border-gray-300 rounded-sm p-3 outline-none focus:border-fk-blue transition uppercase" 
-                         placeholder="e.g. HW12345" 
-                       />
-                    </div>
-                    <div>
-                       <label className="block text-fk-gray mb-1">WhatsApp Number</label>
-                       <input 
-                         type="tel" 
-                         value={phoneNumber}
-                         onChange={(e) => setPhoneNumber(e.target.value)}
                          className="w-full border border-gray-300 rounded-sm p-3 outline-none focus:border-fk-blue transition" 
-                         placeholder="10-digit mobile number" 
-                         maxLength={10}
+                         placeholder="e.g. 5xT2y..." 
                        />
                     </div>
                     <button 
@@ -92,38 +90,28 @@ export default function TrackOrder() {
                     <div className="animate-[slideUp_0.3s_ease-out]">
                        <h2 className="text-[18px] font-medium text-[#212121] mb-4">Order Status: <span className="uppercase text-fk-blue">{orderId}</span></h2>
                        
-                       <div className="relative border-l-2 border-[#388E3C] ml-3 mt-4 space-y-6 pb-4">
-                          <div className="relative pl-6">
-                             <div className="absolute w-3 h-3 bg-[#388E3C] rounded-full -left-[7px] top-1.5"></div>
-                             <h3 className="font-medium text-[#212121] text-[15px]">Order Confirmed</h3>
-                             <p className="text-[12px] text-fk-gray">{result.date}</p>
-                          </div>
-                          
-                          <div className="relative pl-6">
-                             <div className="absolute w-3 h-3 bg-[#388E3C] rounded-full -left-[7px] top-1.5"></div>
-                             <h3 className="font-medium text-[#388E3C] text-[15px]">Shipped</h3>
-                             <p className="text-[12px] text-fk-gray">Package is in transit.</p>
-                          </div>
-                          
-                          <div className="relative pl-6 opacity-40">
-                             <div className="absolute w-3 h-3 bg-gray-300 rounded-full -left-[7px] top-1.5"></div>
-                             <h3 className="font-medium text-[#212121] text-[15px]">Out for Delivery</h3>
-                          </div>
-                          
-                          <div className="relative pl-6 opacity-40">
-                             <div className="absolute w-3 h-3 bg-gray-300 rounded-full -left-[7px] top-1.5"></div>
-                             <h3 className="font-medium text-[#212121] text-[15px]">Delivered</h3>
-                          </div>
-                       </div>
-                       
-                       <div className="mt-4 p-3 bg-gray-50 border border-gray-100 rounded-sm text-[13px]">
-                         <span className="font-medium">Expected Delivery by:</span> <span className="text-[#388E3C] font-bold">{result.expected}</span>
+                       <div className="mt-4 p-4 border border-gray-100 rounded-sm bg-gray-50/50 shadow-sm">
+                         <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+                           <span className="font-bold text-gray-700">Date Placed:</span>
+                           <span className="text-gray-900">{result.date}</span>
+                         </div>
+                         <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+                           <span className="font-bold text-gray-700">Current Status:</span>
+                           <div className="flex items-center gap-2">
+                             <div className={`w-2 h-2 rounded-full ${result.status.includes('Delivered') ? 'bg-green-500' : 'bg-amber-500 animate-[pulse_1.5s_ease-in-out_infinite]'}`}></div>
+                             <span className="text-gray-900 font-bold">{result.status}</span>
+                           </div>
+                         </div>
+                         <div className="flex items-center justify-between">
+                           <span className="font-bold text-gray-700">Expected:</span>
+                           <span className="text-green-600 font-bold">{result.expected}</span>
+                         </div>
                        </div>
                     </div>
                  ) : !loading && !error ? (
                     <div className="text-center text-fk-gray text-[14px]">
                        <div className="text-4xl mb-3 opacity-50">📦</div>
-                       Enter your details to track the real-time status of your shipment.
+                       Enter your Order ID to track the real-time status of your shipment.
                     </div>
                  ) : null}
               </div>

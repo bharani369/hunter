@@ -176,7 +176,7 @@ export default function Layout() {
               : 'hover:text-[#1A1A5E] text-[#1A1A5E]/70 active:scale-95'
           }`}
         >
-          <span className="text-xl">🏠</span>
+          <span className="material-symbols-outlined text-[20px]">home</span>
           <span>Home</span>
         </Link>
         <Link 
@@ -187,7 +187,7 @@ export default function Layout() {
               : 'hover:text-[#1A1A5E] text-[#1A1A5E]/70 active:scale-95'
           }`}
         >
-          <span className="text-xl">🛍️</span>
+          <span className="material-symbols-outlined text-[20px]">shopping_bag_speed</span>
           <span>Shop</span>
         </Link>
         <Link 
@@ -198,8 +198,8 @@ export default function Layout() {
               : 'hover:text-[#1A1A5E] text-[#1A1A5E]/70 active:scale-95'
           }`}
         >
-          <span className="text-xl relative">
-            🛒
+          <span className="relative flex items-center justify-center">
+            <span className="material-symbols-outlined text-[20px]">add_shopping_cart</span>
             {cartCount > 0 && (
               <span className="absolute -top-1.5 -right-2 bg-[#1A1A5E] text-white text-[9px] font-bold w-[16px] h-[16px] flex items-center justify-center rounded-full leading-tight border border-white shadow-sm">
                 {cartCount}
@@ -216,7 +216,7 @@ export default function Layout() {
               : 'hover:text-[#1A1A5E] text-[#1A1A5E]/70 active:scale-95'
           }`}
         >
-          <span className="text-xl">👤</span>
+          <span className="material-symbols-outlined text-[20px]">account_circle</span>
           <span>Account</span>
         </Link>
       </div>

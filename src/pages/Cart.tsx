@@ -79,7 +79,38 @@ export default function Cart() {
     if (clearCart) {
       clearCart();
     }
+
+    try {
+      const { addDoc, collection } = await import('firebase/firestore');
+      const newOrder = {
+        userId: user.uid,
+        items: items.map(i => ({
+          productId: i.id,
+          name: i.name,
+          size: i.selectedSize,
+          colour: i.selectedColour,
+          quantity: i.quantity,
+          price: i.price,
+          image: i.image
+        })),
+        totalAmount: totalDiscounted,
+        status: 'Ordered',
+        datePlaced: new Date().toISOString(),
+        expectedText: 'Delivery in 2-3 days'
+      };
+      const orderRef = await addDoc(collection(db, 'orders'), newOrder);
+      msg = `*Order ID:* ${orderRef.id}\n\n` + msg;
+    } catch (e) {
+      console.error("Failed to save order to history", e);
+      try {
+        const { handleFirestoreError, OperationType } = await import('../lib/firestore-error');
+        handleFirestoreError(e, OperationType.CREATE, 'orders');
+      } catch (err) {
+        // Suppress bubble
+      }
+    }
     
+    showToast('Order placed successfully! Redirecting you to WhatsApp...');
     window.open(`https://wa.me/${WA_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 

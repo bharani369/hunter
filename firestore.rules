@@ -17,5 +17,12 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Orders collection: visible to everyone for get & list, writable for admin updates
+    match /orders/{orderId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow get, list: if true;
+      allow update, delete: if true;
+    }
   }
 }

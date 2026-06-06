@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { CATEGORIES } from '../data';
 import ProductCard from '../components/ProductCard';
 import { useProducts } from '../context/ProductContext';
+import { useSEO } from '../hooks/useSEO';
 
 export default function Shop() {
   const { products, loading } = useProducts();
@@ -12,12 +13,47 @@ export default function Shop() {
   const searchQ = queryParams.get('q')?.toLowerCase() || '';
 
   const [activeCategory, setActiveCategory] = useState<string[]>([]);
+  const [activePriceRanges, setActivePriceRanges] = useState<string[]>([]);
+  const [activeSizes, setActiveSizes] = useState<string[]>([]);
   const [activeSort, setActiveSort] = useState('Relevance');
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+
+  useSEO('Shop Collection | Hunter', 'Browse our extensive collection of high-quality clothing at Hunter.');
+
+  const availableSizes = useMemo(() => {
+    const sizes = new Set<string>();
+    products.forEach(p => p.sizes?.forEach(size => sizes.add(size)));
+    return Array.from(sizes);
+  }, [products]);
+
+  const PRICE_RANGES = [
+    { id: 'under-500', label: 'Under ₹500', min: 0, max: 499 },
+    { id: '500-1000', label: '₹500 - ₹999', min: 500, max: 999 },
+    { id: '1000-1500', label: '₹1000 - ₹1499', min: 1000, max: 1499 },
+    { id: 'above-1500', label: '₹1500 & Above', min: 1500, max: Infinity },
+  ];
+
+  const clearFilters = () => {
+    setActiveCategory([]);
+    setActivePriceRanges([]);
+    setActiveSizes([]);
+  };
 
   const toggleCategory = (cat: string) => {
     setActiveCategory(prev => 
       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    );
+  };
+
+  const togglePriceRange = (id: string) => {
+    setActivePriceRanges(prev => 
+      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSize = (size: string) => {
+    setActiveSizes(prev => 
+      prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
     );
   };
 
@@ -30,6 +66,19 @@ export default function Shop() {
 
     if (activeCategory.length > 0) {
       result = result.filter(p => activeCategory.includes(p.category));
+    }
+
+    if (activeSizes.length > 0) {
+      result = result.filter(p => p.sizes?.some(size => activeSizes.includes(size)));
+    }
+
+    if (activePriceRanges.length > 0) {
+      result = result.filter(p => {
+        return activePriceRanges.some(rangeId => {
+          const range = PRICE_RANGES.find(r => r.id === rangeId);
+          return range && p.price >= range.min && p.price <= range.max;
+        });
+      });
     }
 
     switch(activeSort) {
@@ -58,8 +107,8 @@ export default function Shop() {
         <div className="hidden lg:block w-[280px] shrink-0 bg-white shadow-sm overflow-hidden rounded-sm h-max">
           <div className="p-4 border-b border-gray-100 flex justify-between items-center">
              <h2 className="text-[18px] font-medium text-fk-text">Filters</h2>
-             {activeCategory.length > 0 && (
-               <button onClick={() => setActiveCategory([])} className="text-fk-blue text-[12px] font-medium uppercase">Clear all</button>
+             {(activeCategory.length > 0 || activePriceRanges.length > 0 || activeSizes.length > 0) && (
+               <button onClick={clearFilters} className="text-fk-blue text-[12px] font-medium uppercase">Clear all</button>
              )}
           </div>
 
@@ -77,12 +126,31 @@ export default function Shop() {
              </ul>
           </div>
 
-          {/* Dummy UI for other filters */}
           <div className="p-4 border-b border-gray-100 text-[14px]">
-             <h3 className="font-medium text-fk-text mb-3 uppercase text-[12px] text-[#878787]">Customer Ratings</h3>
+             <h3 className="font-medium text-fk-text mb-3 uppercase text-[12px] text-[#878787]">Price Range</h3>
              <ul className="space-y-2">
-               <li className="flex items-center gap-3 cursor-pointer"><div className="w-4 h-4 border border-gray-300 rounded-sm"></div> <span>4★ & above</span></li>
-               <li className="flex items-center gap-3 cursor-pointer"><div className="w-4 h-4 border border-gray-300 rounded-sm"></div> <span>3★ & above</span></li>
+               {PRICE_RANGES.map(range => (
+                 <li key={range.id} className="flex items-center gap-3 cursor-pointer group" onClick={() => togglePriceRange(range.id)}>
+                    <div className={`w-4 h-4 border rounded-sm flex items-center justify-center ${activePriceRanges.includes(range.id) ? 'bg-fk-blue border-fk-blue text-white' : 'border-gray-300 bg-white group-hover:border-fk-blue'}`}>
+                       {activePriceRanges.includes(range.id) && <span className="text-[10px]">✓</span>}
+                    </div>
+                    <span className="text-[#212121] group-hover:text-fk-blue">{range.label}</span>
+                 </li>
+               ))}
+             </ul>
+          </div>
+
+          <div className="p-4 border-b border-gray-100 text-[14px]">
+             <h3 className="font-medium text-fk-text mb-3 uppercase text-[12px] text-[#878787]">Size</h3>
+             <ul className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+               {availableSizes.map(size => (
+                 <li key={size} className="flex items-center gap-3 cursor-pointer group" onClick={() => toggleSize(size)}>
+                    <div className={`w-4 h-4 border rounded-sm flex items-center justify-center ${activeSizes.includes(size) ? 'bg-fk-blue border-fk-blue text-white' : 'border-gray-300 bg-white group-hover:border-fk-blue'}`}>
+                       {activeSizes.includes(size) && <span className="text-[10px]">✓</span>}
+                    </div>
+                    <span className="text-[#212121] group-hover:text-fk-blue">{size}</span>
+                 </li>
+               ))}
              </ul>
           </div>
         </div>
@@ -130,9 +198,15 @@ export default function Shop() {
 
            {/* Product Grid */}
            {loading ? (
-             <div className="py-20 text-center bg-white">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-fk-blue mx-auto mb-4"></div>
-                <h2 className="text-xl font-medium text-gray-600">Loading stock...</h2>
+             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-[2px] bg-gray-100">
+               {[...Array(8)].map((_, i) => (
+                 <div key={i} className="bg-white p-4 flex flex-col w-full h-[320px] animate-pulse">
+                   <div className="w-full h-[200px] bg-gray-200 mb-4 rounded-sm"></div>
+                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                   <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+                   <div className="h-6 bg-gray-200 rounded w-1/4 mt-auto"></div>
+                 </div>
+               ))}
              </div>
            ) : (
              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-[2px] bg-gray-100">
@@ -184,8 +258,8 @@ export default function Shop() {
                  </div>
               </div>
               <div className="p-4 border-t flex gap-4">
-                 <button onClick={() => { setActiveCategory([]); setActiveSort('Relevance'); }} className="flex-1 py-3 border border-gray-300 font-medium rounded">Clear</button>
-                 <button onClick={() => setShowMobileFilter(false)} className="flex-1 py-3 bg-fk-yellow text-white font-medium rounded">Apply</button>
+                 <button onClick={() => { clearFilters(); setActiveSort('Relevance'); }} className="flex-1 py-3 border border-gray-300 font-medium rounded hover:bg-gray-50 transition-colors">Clear</button>
+                 <button onClick={() => setShowMobileFilter(false)} className="flex-1 py-3 bg-[#1A1A5E] hover:bg-[#1A1A5E]/90 text-white font-medium rounded">Apply</button>
               </div>
            </div>
         </div>

@@ -35,6 +35,20 @@
         "updatedAt": { "type": "string", "format": "date-time", "description": "ISO timestamp of last update" }
       },
       "required": ["firstName", "lastName", "email"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Real-time purchase order placed by a customer.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the logged-in user who placed the order" },
+        "items": { "type": "array", "description": "List of ordered clothing items with sizes and options" },
+        "totalAmount": { "type": "number", "description": "Total order pricing" },
+        "status": { "type": "string", "description": "Shipping and fulfillment status", "enum": ["Ordered", "Shipped - In Transit", "Out for Delivery", "Delivered", "Cancelled"] },
+        "datePlaced": { "type": "string", "format": "date-time", "description": "ISO timestamp of creation" },
+        "expectedText": { "type": "string", "description": "Estimated delivery notice string" }
+      },
+      "required": ["userId", "items", "totalAmount", "status", "datePlaced"]
     }
   },
   "firestore": {
@@ -45,6 +59,10 @@
     "users/{userId}": {
       "schema": "UserProfile",
       "description": "Custom user profile details and accumulated loyalty program points."
+    },
+    "orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer order history records managed by admin dashboard."
     }
   }
 }

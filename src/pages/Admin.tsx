@@ -8,11 +8,16 @@ import { CATEGORIES } from '../data';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import BillGenerator from '../components/BillGenerator';
 
+import AdminOrders from '../components/AdminOrders';
+import AdminSettings from '../components/AdminSettings';
+
 export default function Admin() {
   const { user } = useAuth();
   const { products, addProduct, updateProduct, deleteProduct, loading } = useProducts();
   const showToast = useToast();
   
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'settings'>('products');
+
   const [isEditing, setIsEditing] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<any>({
     name: '',
@@ -32,6 +37,7 @@ export default function Admin() {
   });
   
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const multiFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -196,6 +202,7 @@ export default function Admin() {
       stock: Number(currentProduct.stock) || 0,
     };
     
+    setIsSaving(true);
     try {
       if (isEditing && currentProduct.id) {
         await updateProduct(currentProduct.id, formattedProduct);
@@ -208,6 +215,8 @@ export default function Admin() {
     } catch (err) {
       console.error(err);
       showToast('Error saving product!');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -256,11 +265,45 @@ export default function Admin() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard - Manage Stock</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">Admin Dashboard</h1>
 
-      {/* Analytics Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 mb-8 space-x-8">
+        <button
+          onClick={() => setActiveTab('products')}
+          className={`pb-4 text-sm font-medium transition-colors ${
+            activeTab === 'products' ? 'text-fk-blue border-b-2 border-fk-blue' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Menu & Products
+        </button>
+        <button
+          onClick={() => setActiveTab('orders')}
+          className={`pb-4 text-sm font-medium transition-colors ${
+            activeTab === 'orders' ? 'text-fk-blue border-b-2 border-fk-blue' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Live Orders
+        </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`pb-4 text-sm font-medium transition-colors ${
+            activeTab === 'settings' ? 'text-fk-blue border-b-2 border-fk-blue' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Settings
+        </button>
+      </div>
+
+      {activeTab === 'orders' && <AdminOrders />}
+      
+      {activeTab === 'settings' && <AdminSettings />}
+
+      {activeTab === 'products' && (
+        <>
+          {/* Analytics Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
           <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-fk-blue" />
             Daily Sales (Past 7 Days)
@@ -533,23 +576,38 @@ export default function Admin() {
             </div>
           </div>
           
-          <div className="md:col-span-2 border-t pt-4 flex gap-3 justify-end mt-2">
-            {isEditing && (
-              <button 
-                type="button" 
-                onClick={resetForm}
-                className="px-6 py-2 border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 transition"
-              >
-                Cancel
-              </button>
+          <div className="md:col-span-2 border-t pt-4 flex flex-col gap-3 justify-end mt-2">
+            {isSaving && (
+              <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-2">
+                <div className="h-full bg-fk-blue transition-all duration-300 animate-[pulse_1s_ease-in-out_infinite]" style={{ width: '100%' }}></div>
+              </div>
             )}
-            <button 
-              type="submit" 
-              disabled={isUploading}
-              className="px-8 py-2 bg-fk-blue text-white rounded-md font-medium shadow hover:bg-[#1f5cc0] transition disabled:opacity-50"
-            >
-              {isEditing ? 'Update Product' : 'Add Product'}
-            </button>
+            <div className="flex gap-3 justify-end">
+              {isEditing && (
+                <button 
+                  type="button" 
+                  onClick={resetForm}
+                  disabled={isSaving}
+                  className="px-6 py-2 border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              )}
+              <button 
+                type="submit" 
+                disabled={isUploading || isSaving}
+                className="px-8 py-2 bg-fk-blue text-white rounded-md font-medium shadow hover:bg-[#1f5cc0] transition disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
+                    Saving...
+                  </>
+                ) : (
+                  isEditing ? 'Update Product' : 'Add Product'
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -623,6 +681,8 @@ export default function Admin() {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

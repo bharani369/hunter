@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/firestore-error';
 import { 
   User as UserIcon, 
   ShoppingBag, 
@@ -131,30 +132,29 @@ export default function Account() {
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
-  // Simulated Orders history
-  const [orders] = useState([
-    {
-      id: 'HW98246',
-      date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-      status: 'Delivered',
-      items: [
-        { name: 'Premium Cotton Solid Shirt', size: 'M', quantity: 1, price: 899, colour: 'Navy Blue', image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&q=80&w=200' }
-      ],
-      totalPrice: 899,
-      expectedText: 'Delivered on Mon, May 31'
-    },
-    {
-      id: 'HW12763',
-      date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-      status: 'Shipped - In Transit',
-      items: [
-        { name: 'Hunter Club Fit Hooded T-Shirt', size: 'L', quantity: 1, price: 999, colour: 'Sunset Maroon', image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=200' },
-        { name: 'Pure Comfort Cargo Gym Trousers', size: 'XL', quantity: 1, price: 1199, colour: 'Oliver Green', image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&q=80&w=200' }
-      ],
-      totalPrice: 2198,
-      expectedText: 'Delivered expected by Sunday, Jun 6'
-    }
-  ]);
+  // Real-time Orders history
+  const [orders, setOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ordersList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        // map db values to expected values if needed
+        date: new Date(doc.data().datePlaced).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+      })).sort((a: any, b: any) => new Date(b.datePlaced).getTime() - new Date(a.datePlaced).getTime());
+      setOrders(ordersList);
+    }, (error) => {
+      try {
+        handleFirestoreError(error, OperationType.GET, 'orders');
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+      }
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   return (
     <div className="bg-[#F1F3F6] min-h-screen py-4 lg:py-8">
@@ -169,7 +169,7 @@ export default function Account() {
             <div className="bg-white p-4 rounded-sm shadow-sm flex items-center gap-4">
               <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-200 flex items-center justify-center bg-[#E1F5FE]">
                 {user?.photoURL ? (
-                  <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" referrerpolicy="no-referrer" />
+                  <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
                   <div className="text-xl font-bold text-fk-blue shrink-0">
                     {(profile.firstName?.[0] || 'H').toUpperCase()}
@@ -298,125 +298,7 @@ export default function Account() {
                   </div>
                 )}
 
-                {/* LOYALTY POINTS SYSTEM CARD */}
-                {user ? (
-                  <div id="hunter-loyalty-panel" className="mb-8 overflow-hidden rounded-xl border border-amber-300 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-5 sm:p-6 shadow-md relative">
-                    {/* Decorative background shape */}
-                    <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none" />
-                    
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div className="flex items-start gap-4">
-                        {/* Points Icon badge */}
-                        <div className="p-3.5 bg-[#1A1A5E] text-[#fff200] rounded-xl shadow-md border border-[#fff200]/20 shrink-0">
-                          <Crown className="w-6 h-6 animate-pulse" />
-                        </div>
-                        
-                        <div>
-                          {/* Title & Badge */}
-                          <div className="flex flex-wrap items-center gap-2.5">
-                            <h4 className="text-sm font-black uppercase tracking-wider text-[#1A1A5E]">
-                              Hunter Loyalty Program
-                            </h4>
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-100 border border-amber-300 rounded-full text-[10px] font-bold text-amber-800">
-                              <Sparkles className="w-3 h-3 text-amber-600" />
-                              {profile.loyaltyPoints && profile.loyaltyPoints >= 1000 ? 'Platinum Tier' : profile.loyaltyPoints && profile.loyaltyPoints >= 500 ? 'Gold Tier' : profile.loyaltyPoints && profile.loyaltyPoints >= 200 ? 'Silver Tier' : 'Bronze Hunter'}
-                            </span>
-                          </div>
-                          
-                          {/* Main points balance display */}
-                          <div className="mt-1 flex items-baseline gap-1.5">
-                            <span className="text-3xl font-black text-[#1A1A5E] tracking-tight">{profile.loyaltyPoints || 0}</span>
-                            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Available Points</span>
-                          </div>
-                          
-                          <p className="text-[11px] text-gray-400 mt-1.5 font-bold">
-                            💡 You earn <span className="text-amber-600 font-black">1 Point for every ₹10 spent</span> on Hunter outfits.
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Secondary button or quick info */}
-                      <div className="text-right sm:border-l sm:border-gray-200 sm:pl-6 shrink-0 flex flex-col justify-center">
-                        <p className="text-[10px] uppercase font-black tracking-widest text-[#1A1A5E]">Redeem Value</p>
-                        <p className="text-lg font-black text-emerald-600">₹{Math.floor((profile.loyaltyPoints || 0) * 0.1)} Off</p>
-                        <p className="text-[9px] text-gray-400 font-bold mt-0.5">Redeemable in-store or WhatsApp</p>
-                      </div>
-                    </div>
 
-                    {/* Progress indicator or milestones thresholds */}
-                    <div className="mt-6 pt-5 border-t border-gray-100">
-                      <p className="text-[11px] font-extrabold uppercase text-[#1A1A5E] mb-3 flex items-center gap-1.5">
-                        <Gift className="w-3.5 h-3.5 text-amber-600" /> Exclusive Rewards & Milestones
-                      </p>
-                      
-                      {/* Milestones Horizontal List */}
-                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
-                        {/* Milestone 50 points */}
-                        <div className={`p-3 rounded-lg border flex flex-col justify-between transition-all duration-300 ${ (profile.loyaltyPoints || 0) >= 50 ? 'bg-emerald-50/70 border-emerald-300 text-emerald-800' : 'bg-gray-50/50 border-gray-100 text-gray-400' }`}>
-                          <div>
-                            <p className="font-extrabold text-[10px] tracking-wider uppercase">50 Points</p>
-                            <p className="font-semibold text-[11px] mt-0.5">Collar Stays / Buttons</p>
-                          </div>
-                          <div className="mt-2 text-[10px] font-black flex items-center gap-1 bg-white/60 px-1.5 py-0.5 rounded w-fit">
-                            { (profile.loyaltyPoints || 0) >= 50 ? '✔️ Unlocked' : '🔒 Locked' }
-                          </div>
-                        </div>
-
-                        {/* Milestone 100 points */}
-                        <div className={`p-3 rounded-lg border flex flex-col justify-between transition-all duration-300 ${ (profile.loyaltyPoints || 0) >= 100 ? 'bg-emerald-50/70 border-emerald-300 text-emerald-800' : 'bg-gray-50/50 border-gray-100 text-gray-400' }`}>
-                          <div>
-                            <p className="font-extrabold text-[10px] tracking-wider uppercase">100 Points</p>
-                            <p className="font-semibold text-[11px] mt-0.5">Extra ₹100 Off coupon</p>
-                          </div>
-                          <div className="mt-2 text-[10px] font-black flex items-center gap-1 bg-white/60 px-1.5 py-0.5 rounded w-fit">
-                            { (profile.loyaltyPoints || 0) >= 100 ? '✔️ Unlocked' : '🔒 Locked' }
-                          </div>
-                        </div>
-
-                        {/* Milestone 250 points */}
-                        <div className={`p-3 rounded-lg border flex flex-col justify-between transition-all duration-300 ${ (profile.loyaltyPoints || 0) >= 250 ? 'bg-emerald-50/70 border-emerald-300 text-emerald-800' : 'bg-gray-50/50 border-gray-100 text-gray-400' }`}>
-                          <div>
-                            <p className="font-extrabold text-[10px] tracking-wider uppercase">250 Points</p>
-                            <p className="font-semibold text-[11px] mt-0.5">Free Celebration Mug</p>
-                          </div>
-                          <div className="mt-2 text-[10px] font-black flex items-center gap-1 bg-white/60 px-1.5 py-0.5 rounded w-fit">
-                            { (profile.loyaltyPoints || 0) >= 250 ? '✔️ Unlocked' : '🔒 Locked' }
-                          </div>
-                        </div>
-
-                        {/* Milestone 500 points */}
-                        <div className={`p-3 rounded-lg border flex flex-col justify-between transition-all duration-300 ${ (profile.loyaltyPoints || 0) >= 500 ? 'bg-emerald-50/70 border-emerald-300 text-emerald-800' : 'bg-gray-50/50 border-gray-100 text-gray-400' }`}>
-                          <div>
-                            <p className="font-extrabold text-[10px] tracking-wider uppercase">500 Points</p>
-                            <p className="font-semibold text-[11px] mt-0.5">Custom Styling Session</p>
-                          </div>
-                          <div className="mt-2 text-[10px] font-black flex items-center gap-1 bg-white/60 px-1.5 py-0.5 rounded w-fit">
-                            { (profile.loyaltyPoints || 0) >= 500 ? '✔️ Unlocked' : '🔒 Locked' }
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div id="hunter-loyalty-guest" className="mb-8 p-5 bg-blue-50/50 border border-blue-200 rounded-xl flex items-start gap-4">
-                    <div className="p-3 bg-[#1A1A5E] text-[#fff200] rounded-xl shrink-0">
-                      <Crown className="w-5 h-5 text-[#fff200]" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-black text-[#1A1A5E] uppercase tracking-wider">Start Earning Loyalty Points!</h4>
-                      <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                        Sign up or log into your Hunter account to join our Loyalty program. Unlock exclusive free shirting gifts, ₹100 combo discount coupons, and premium styling treats as you shop!
-                      </p>
-                      <button
-                        type="button"
-                        onClick={showLogin}
-                        className="mt-3 bg-[#1A1A5E] hover:bg-[#1A1A5E]/90 text-white font-black text-[10px] uppercase tracking-wider py-1.5 px-3.5 rounded transition"
-                      >
-                        Sign In Now
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 <form onSubmit={handleSaveProfile} className="space-y-6">
                   
@@ -545,96 +427,193 @@ export default function Account() {
                   )}
                 </form>
 
-                {/* Additional Flipkart Style Promo Banner */}
-                <div className="mt-8 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-100 rounded-sm flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold text-fk-text text-sm mb-0.5">🚀 Hunter Coins & Rewards</h4>
-                    <p className="text-xs text-fk-gray">Earn 5% flat cashback on your custom WhatsApp purchases. Trade them for discounts.</p>
-                  </div>
-                  <span className="text-[#388E3C] text-lg font-bold">120 Coins</span>
-                </div>
+
               </div>
             )}
 
             {/* TAB CONTENT: ORDER HISTORY */}
             {activeTab === 'orders' && (
-              <div className="space-y-6">
-                {orders.map((order) => (
-                  <div key={order.id} className="border border-gray-200 rounded-sm hover:shadow-md transition">
-                    
-                    {/* Order header information */}
-                    <div className="bg-gray-50 p-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-3 text-xs text-fk-gray">
-                      <div className="flex gap-4">
-                        <div>
-                          <p className="uppercase">Order ID</p>
-                          <span className="font-bold text-fk-text text-sm uppercase">{order.id}</span>
-                        </div>
-                        <div>
-                          <p className="uppercase">Date Placed</p>
-                          <span className="font-bold text-fk-text text-sm">{order.date}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="text-right">
-                        <p className="uppercase">WhatsApp Tracking Link</p>
-                        <a 
-                          href={`https://wa.me/${WA_PHONE}?text=${encodeURIComponent(`Hi Hunter! I want to check order with ID ${order.id}`)}`}
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="text-fk-blue font-bold hover:underline block"
-                        >
-                          Help on WhatsApp
-                        </a>
-                      </div>
-                    </div>
-
-                    {/* Order products list */}
-                    <div className="divide-y divide-gray-100">
-                      {order.items.map((item, idx) => (
-                        <div key={idx} className="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                          <div className="flex gap-3">
-                            <img src={item.image} alt={item.name} className="w-16 h-16 object-cover border border-gray-100 rounded-sm" />
+              <div className="space-y-8">
+                {/* Current Orders Section */}
+                <div>
+                  <h3 className="text-lg font-bold text-fk-text mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-fk-blue">local_shipping</span>
+                    Current Active Orders
+                  </h3>
+                  <div className="space-y-6">
+                    {orders.filter(o => !o.status.includes('Delivered')).map((order) => (
+                      <div key={order.id} className="border border-gray-200 rounded-sm hover:shadow-md transition">
+                        
+                        {/* Order header information */}
+                        <div className="bg-blue-50/50 p-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-3 text-xs text-fk-gray">
+                          <div className="flex gap-4">
                             <div>
-                              <h4 className="font-semibold text-fk-text text-sm line-clamp-1">{item.name}</h4>
-                              <p className="text-xs text-fk-gray mt-1">Size: <span className="text-fk-text font-medium">{item.size}</span> | Colour: <span className="text-fk-text font-medium">{item.colour}</span></p>
-                              <p className="text-xs text-fk-gray">Quantity: <span className="text-fk-text font-medium">{item.quantity}</span></p>
+                              <p className="uppercase">Order ID</p>
+                              <span className="font-bold text-fk-text text-sm uppercase">{order.id}</span>
+                            </div>
+                            <div>
+                              <p className="uppercase">Date Placed</p>
+                              <span className="font-bold text-fk-text text-sm">{order.date}</span>
                             </div>
                           </div>
-
-                          <div className="flex flex-col sm:items-end gap-2 text-right">
-                            <span className="font-bold text-fk-text text-sm">₹{item.price * item.quantity}</span>
-                            <div className="flex items-center gap-1">
-                              <span className={`w-2.5 h-2.5 rounded-full ${order.status.includes('Delivered') ? 'bg-[#388E3C]' : 'bg-amber-400'}`}></span>
-                              <span className="text-xs font-semibold">{order.status}</span>
-                            </div>
-                            <span className="text-[11px] text-fk-gray">{order.expectedText}</span>
+                          
+                          <div className="text-right">
+                            <p className="uppercase">WhatsApp Support</p>
+                            <a 
+                              href={`https://wa.me/${WA_PHONE}?text=${encodeURIComponent(`Hi Hunter! I want to check order with ID ${order.id}`)}`}
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-fk-blue font-bold hover:underline block"
+                            >
+                              Message on WhatsApp
+                            </a>
                           </div>
                         </div>
-                      ))}
-                    </div>
 
-                    {/* Order Footer with Action Buttons */}
-                    <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 rounded-b-sm">
-                      <Link 
-                        to="/track"
-                        className="bg-white border border-gray-300 hover:bg-gray-50 text-fk-text font-bold px-4 py-2 rounded-sm text-xs transition"
-                      >
-                        Real-time Track Status
-                      </Link>
-                      <a 
-                        href={`https://wa.me/${WA_PHONE}?text=${encodeURIComponent(`Hi Hunter! I have a question regarding order HW98246`)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="bg-fk-blue hover:bg-fk-blue/90 text-white font-bold px-4 py-2 rounded-sm text-xs transition flex items-center justify-center"
-                      >
-                        Help Support (WhatsApp)
-                      </a>
-                    </div>
+                        {/* Order products list */}
+                        <div className="divide-y divide-gray-100">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                              <div className="flex gap-3">
+                                <img src={item.image} alt={item.name} className="w-16 h-16 object-cover border border-gray-100 rounded-sm shadow-sm" />
+                                <div>
+                                  <h4 className="font-semibold text-fk-text text-sm line-clamp-1">{item.name}</h4>
+                                  <p className="text-xs text-fk-gray mt-1">Size: <span className="text-fk-text font-medium">{item.size}</span> | Colour: <span className="text-fk-text font-medium">{item.colour}</span></p>
+                                  <p className="text-xs text-fk-gray">Quantity: <span className="text-fk-text font-medium">{item.quantity}</span></p>
+                                </div>
+                              </div>
 
+                              <div className="flex flex-col sm:items-end gap-2 text-right">
+                                <span className="font-bold text-fk-text text-sm">₹{item.price * item.quantity}</span>
+                                <div className="flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">
+                                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-[pulse_1s_ease-in-out_infinite]"></span>
+                                  <span className="text-xs font-bold text-amber-700">{order.status}</span>
+                                </div>
+                                <span className="text-[11px] text-fk-gray font-medium">{order.expectedText}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Status Tracker */}
+                        <div className="px-4 py-6 bg-white border-t border-gray-100 mt-2">
+                           <div className="relative max-w-sm ml-auto mr-auto sm:ml-0">
+                             <div className="overflow-hidden h-[4px] mb-4 text-xs flex rounded-full bg-gray-200">
+                               <div style={{ width: "60%" }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-fk-blue"></div>
+                             </div>
+                             <div className="flex justify-between text-[10px] sm:text-[11px] font-semibold text-gray-400 absolute w-full top-[-10px] sm:top-[-11px]">
+                               <div className="text-fk-blue relative flex flex-col items-center">
+                                 <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-fk-blue rounded-full shadow-sm mb-1 z-10 mx-auto"></div>
+                                 <span className="mt-1 whitespace-nowrap flex leading-none pt-1">Ordered</span>
+                               </div>
+                               <div className="text-fk-blue relative flex flex-col items-center">
+                                 <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-fk-blue rounded-full shadow-sm mb-1 z-10 mx-auto"></div>
+                                 <span className="mt-1 whitespace-nowrap flex leading-none pt-1">Shipped</span>
+                               </div>
+                               <div className="relative flex flex-col items-center opacity-40">
+                                 <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-gray-300 rounded-full shadow-sm mb-1 z-10 mx-auto"></div>
+                                 <span className="mt-1 whitespace-nowrap flex leading-none pt-1">Out for Delivery</span>
+                               </div>
+                               <div className="relative flex flex-col items-center opacity-40">
+                                 <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-gray-300 rounded-full shadow-sm mb-1 z-10 mx-auto"></div>
+                                 <span className="mt-1 whitespace-nowrap flex leading-none pt-1">Delivered</span>
+                               </div>
+                             </div>
+                           </div>
+                        </div>
+
+                        {/* Order Footer with Action Buttons */}
+                        <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 rounded-b-sm">
+                          <Link 
+                            to="/track"
+                            className="bg-white border border-gray-300 hover:bg-gray-50 text-fk-text font-bold px-4 py-2 rounded-sm text-xs transition"
+                          >
+                            Real-time Track Status
+                          </Link>
+                          <a 
+                            href={`https://wa.me/${WA_PHONE}?text=${encodeURIComponent(`Hi Hunter! I have a question regarding order HW98246`)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="bg-fk-blue hover:bg-fk-blue/90 text-white font-bold px-4 py-2 rounded-sm text-xs transition flex items-center justify-center"
+                          >
+                            Help Support
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                    {orders.filter(o => !o.status.includes('Delivered')).length === 0 && (
+                      <div className="text-center py-6 text-gray-500 text-sm font-medium bg-gray-50 rounded border border-gray-100">
+                        No active orders at the moment.
+                      </div>
+                    )}
                   </div>
-                ))}
+                </div>
 
-                <div className="p-4 bg-blue-50/50 rounded border border-blue-100 text-xs text-fk-gray leading-5">
+                {/* Past Orders Section */}
+                <div className="mt-8">
+                  <h3 className="text-lg font-bold text-fk-text mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-green-600">task_alt</span>
+                    Past Order History
+                  </h3>
+                  <div className="space-y-6">
+                    {orders.filter(o => o.status.includes('Delivered')).map((order) => (
+                      <div key={order.id} className="border border-gray-200 rounded-sm hover:shadow-md transition opacity-80 hover:opacity-100">
+                        {/* Order header information */}
+                        <div className="bg-gray-50 p-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-3 text-xs text-fk-gray">
+                          <div className="flex gap-4">
+                            <div>
+                              <p className="uppercase">Order ID</p>
+                              <span className="font-bold text-fk-text text-sm uppercase">{order.id}</span>
+                            </div>
+                            <div>
+                              <p className="uppercase">Date Placed</p>
+                              <span className="font-bold text-fk-text text-sm">{order.date}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Order products list */}
+                        <div className="divide-y divide-gray-100">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                              <div className="flex gap-3">
+                                <img src={item.image} alt={item.name} className="w-16 h-16 object-cover border border-gray-100 rounded-sm grayscale-[0.2]" />
+                                <div>
+                                  <h4 className="font-semibold text-fk-text text-sm line-clamp-1">{item.name}</h4>
+                                  <p className="text-xs text-fk-gray mt-1">Size: <span className="text-fk-text font-medium">{item.size}</span> | Colour: <span className="text-fk-text font-medium">{item.colour}</span></p>
+                                  <p className="text-xs text-fk-gray">Quantity: <span className="text-fk-text font-medium">{item.quantity}</span></p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col sm:items-end gap-2 text-right">
+                                <span className="font-bold text-fk-text text-sm">₹{item.price * item.quantity}</span>
+                                <div className="flex items-center gap-1 bg-green-50 px-2.5 py-1 rounded-full border border-green-100">
+                                  <span className="w-2 h-2 rounded-full bg-green-600"></span>
+                                  <span className="text-xs font-bold text-green-700">{order.status}</span>
+                                </div>
+                                <span className="text-[11px] text-fk-gray font-medium">{order.expectedText}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Order Footer */}
+                        <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 rounded-b-sm">
+                          <button className="bg-fk-blue hover:bg-[#1a50b5] text-white font-bold px-4 py-2 rounded-sm text-xs transition flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[16px]">refresh</span> Buy Again
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {orders.filter(o => o.status.includes('Delivered')).length === 0 && (
+                      <div className="text-center py-6 text-gray-500 text-sm font-medium bg-gray-50 rounded border border-gray-100">
+                        No past orders found.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-blue-50/50 rounded border border-blue-100 text-xs text-fk-gray leading-5 mt-8">
                    <p className="font-bold text-fk-blue mb-1">💡 Having trouble finding your order?</p>
                    Make sure to track the exact same mobile number you used while placing the order on WhatsApp. For custom designs or wholesale bulk booking, ping us with your bill payment screenshot.
                 </div>
