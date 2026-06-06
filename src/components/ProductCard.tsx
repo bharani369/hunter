@@ -51,12 +51,18 @@ export default function ProductCard({ product }: ProductCardProps) {
           {product.name}
         </h3>
         
-        <div className="flex items-center gap-2 mb-2 mt-auto">
-          <div className="bg-fk-green text-white text-[12px] px-1.5 py-0.5 rounded-[3px] font-bold flex items-center gap-1">
-            {product.rating} <span className="text-[10px] leading-none">★</span>
+        {product.reviews && product.reviews > 0 ? (
+          <div className="flex items-center gap-2 mb-2 mt-auto">
+            <div className="bg-fk-green text-white text-[12px] px-1.5 py-0.5 rounded-[3px] font-bold flex items-center gap-1">
+              {product.rating} <span className="text-[10px] leading-none">★</span>
+            </div>
+            <span className="text-[12px] text-fk-gray font-medium">({product.reviews.toLocaleString()})</span>
           </div>
-          <span className="text-[12px] text-fk-gray font-medium">({product.reviews.toLocaleString()})</span>
-        </div>
+        ) : (
+          <div className="flex items-center gap-2 mb-2 mt-auto text-[12px] text-fk-gray/70 font-medium italic">
+            <span>No ratings yet</span>
+          </div>
+        )}
 
         <div className="flex flex-wrap items-baseline gap-2">
           <span className="text-[16px] font-bold text-[#212121]">₹{product.price}</span>

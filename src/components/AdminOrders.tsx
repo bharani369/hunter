@@ -3,7 +3,7 @@ import { collection, query, onSnapshot, doc, updateDoc, orderBy } from 'firebase
 import { db } from '../lib/firebase';
 import { Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import { useToast } from './ToastContainer';
-import { handleFirestoreError, OperationType } from '../lib/firestore-error';
+import { handleFirestoreError, OperationType } from '../lib/firestore-logger';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -11,12 +11,12 @@ export default function AdminOrders() {
   const showToast = useToast();
 
   useEffect(() => {
-    const q = query(collection(db, 'orders'), orderBy('datePlaced', 'desc'));
+    const q = query(collection(db, 'orders'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ordersList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
+      })).sort((a: any, b: any) => new Date(b.datePlaced).getTime() - new Date(a.datePlaced).getTime());
       setOrders(ordersList);
       setLoading(false);
     }, (error) => {

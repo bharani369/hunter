@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { handleFirestoreError, OperationType } from '../lib/firestore-error';
+import { handleFirestoreError, OperationType } from '../lib/firestore-logger';
 import { 
   User as UserIcon, 
   ShoppingBag, 
@@ -41,7 +41,7 @@ interface CustomProfile {
 }
 
 export default function Account() {
-  const { user, logout, showLogin } = useAuth();
+  const { user, logout } = useAuth();
   const { items, removeFromCart, updateQuantity, addToCart } = useCart();
   const { wishlistItems, toggleWishlist } = useWishlist();
   const navigate = useNavigate();
@@ -69,9 +69,17 @@ export default function Account() {
           const docRef = doc(db, 'users', user.uid);
           const snap = await getDoc(docRef);
           if (snap.exists() && active) {
-            const data = snap.data() as CustomProfile;
-            setProfile(data);
-            localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(data));
+            const data = snap.data();
+            const loadedProfile: CustomProfile = {
+              firstName: data.firstName || '',
+              lastName: data.lastName || '',
+              phone: data.phone || '',
+              email: data.email || '',
+              gender: data.gender || '',
+              loyaltyPoints: data.loyaltyPoints || 0,
+            };
+            setProfile(loadedProfile);
+            localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(loadedProfile));
             return;
           }
         } catch (error) {
@@ -83,7 +91,15 @@ export default function Account() {
       const saved = localStorage.getItem(LOCAL_PROFILE_KEY);
       if (saved && active) {
         try {
-          setProfile(JSON.parse(saved));
+          const parsed = JSON.parse(saved);
+          setProfile({
+            firstName: parsed.firstName || '',
+            lastName: parsed.lastName || '',
+            phone: parsed.phone || '',
+            email: parsed.email || '',
+            gender: parsed.gender || '',
+            loyaltyPoints: parsed.loyaltyPoints || 0,
+          });
         } catch (e) {
           console.error(e);
         }
@@ -245,7 +261,7 @@ export default function Account() {
               </button>
 
               {/* Log Out */}
-              {user ? (
+              {user && (
                 <button 
                   onClick={() => {
                     logout();
@@ -255,14 +271,6 @@ export default function Account() {
                 >
                   <LogOut className="w-5 h-5" />
                   <span>Logout</span>
-                </button>
-              ) : (
-                <button 
-                  onClick={showLogin}
-                  className="w-full text-left p-4 hover:bg-blue-50 flex items-center gap-3 text-fk-blue transition-colors font-bold"
-                >
-                  <UserIcon className="w-5 h-5" />
-                  <span>Login / Sign Up</span>
                 </button>
               )}
             </div>
@@ -323,7 +331,7 @@ export default function Account() {
                         <input 
                           type="text" 
                           disabled={!isEditing}
-                          value={profile.firstName}
+                          value={profile.firstName || ''}
                           onChange={e => setProfile({...profile, firstName: e.target.value})}
                           className="w-full border border-gray-200 rounded-sm px-4 py-2.5 outline-none focus:border-fk-blue transition disabled:bg-gray-50 text-sm font-semibold disabled:text-gray-500"
                         />
@@ -333,7 +341,7 @@ export default function Account() {
                         <input 
                           type="text" 
                           disabled={!isEditing}
-                          value={profile.lastName}
+                          value={profile.lastName || ''}
                           onChange={e => setProfile({...profile, lastName: e.target.value})}
                           className="w-full border border-gray-200 rounded-sm px-4 py-2.5 outline-none focus:border-fk-blue transition disabled:bg-gray-50 text-sm font-semibold disabled:text-gray-500"
                         />
@@ -381,7 +389,7 @@ export default function Account() {
                           <input 
                             type="email" 
                             disabled={!isEditing}
-                            value={profile.email}
+                            value={profile.email || ''}
                             onChange={e => setProfile({...profile, email: e.target.value})}
                             className="w-full border border-gray-200 rounded-sm pl-10 pr-4 py-2.5 outline-none focus:border-fk-blue transition disabled:bg-gray-50 text-sm font-semibold disabled:text-gray-500"
                             placeholder="your.email@gmail.com"
@@ -395,7 +403,7 @@ export default function Account() {
                           <input 
                             type="tel" 
                             disabled={!isEditing}
-                            value={profile.phone}
+                            value={profile.phone || ''}
                             onChange={e => setProfile({...profile, phone: e.target.value})}
                             className="w-full border border-gray-200 rounded-sm pl-10 pr-4 py-2.5 outline-none focus:border-fk-blue transition disabled:bg-gray-50 text-sm font-semibold disabled:text-gray-500"
                             placeholder="e.g. 9876543210"
@@ -639,12 +647,16 @@ export default function Account() {
                           <span className="text-[11px] bg-fk-blue/10 text-fk-blue text-xs font-semibold px-2 py-0.5 rounded uppercase">{product.tag || 'Trending'}</span>
                           <h4 className="font-bold text-fk-text text-sm line-clamp-1 mt-1">{product.name}</h4>
                           
-                          <div className="flex items-center gap-2 mt-1">
-                             <div className="bg-fk-green text-white text-[11px] px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5">
-                               {product.rating} ★
-                             </div>
-                             <span className="text-[11px] text-fk-gray">({product.reviews})</span>
-                          </div>
+                          {product.reviews && product.reviews > 0 ? (
+                            <div className="flex items-center gap-2 mt-1">
+                               <div className="bg-fk-green text-white text-[11px] px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5">
+                                 {product.rating} ★
+                               </div>
+                               <span className="text-[11px] text-fk-gray">({product.reviews})</span>
+                            </div>
+                          ) : (
+                            <div className="text-[11px] text-fk-gray/70 italic mt-1 font-medium">No ratings yet</div>
+                          )}
                           
                           <div className="flex items-baseline gap-2 mt-2">
                             <span className="font-bold text-sm">₹{product.price}</span>

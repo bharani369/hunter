@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 export default function Header() {
   const { cartCount } = useCart();
   const { wishlistItems } = useWishlist();
-  const { user, logout, showLogin } = useAuth();
+  const { user, logout } = useAuth();
   const { products } = useProducts();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,7 +73,7 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* Desktop Search & Actions Bar - Right */}
+          {/* Desktop Search & Actions Bar - Right */}
         <div className="hidden lg:flex items-center gap-4 shrink-0 justify-end">
           {/* Search Bar - Desktop */}
           <div className="relative w-56 xl:w-64" onBlur={() => setTimeout(() => setShowSuggestions(false), 250)}>
@@ -169,39 +169,6 @@ export default function Header() {
               )}
             </AnimatePresence>
           </div>
-
-          {user ? (
-            <div className="relative group shrink-0">
-              <Link to="/account" className="bg-[#1A1A5E] text-white px-4 py-1.5 rounded-sm font-bold text-xs hover:bg-[#1A1A5E]/90 shadow-sm transition flex items-center gap-1">
-                <span>{user.displayName?.split(' ')[0] || 'Account'}</span>
-                <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover:rotate-180" />
-              </Link>
-              <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-gray-100 rounded-sm shadow-xl hidden group-hover:block text-fk-text text-sm overflow-hidden z-50">
-                <Link to="/account" className="block px-4 py-2 hover:bg-gray-50 font-medium border-b border-gray-50 flex items-center gap-2 text-fk-text"><i className="fa-regular fa-user text-fk-blue"></i> My Profile</Link>
-                <Link to="/account" className="block px-4 py-2 hover:bg-gray-50 font-medium border-b border-gray-50 flex items-center gap-2 text-fk-text"><i className="fa-solid fa-bag-shopping text-fk-blue"></i> Orders</Link>
-                <Link to="/wishlist" className="block px-4 py-2 hover:bg-gray-50 font-medium border-b border-gray-50 flex items-center gap-2 text-fk-text"><i className="fa-regular fa-heart text-fk-blue"></i> Wishlist</Link>
-                <button onClick={logout} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 font-medium flex items-center gap-2"><i className="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
-              </div>
-            </div>
-          ) : (
-            <div className="relative group shrink-0">
-              <button onClick={showLogin} className="bg-[#1A1A5E] text-white px-4 py-1.5 rounded-sm font-bold text-xs hover:bg-[#1A1A5E]/90 shadow-sm transition flex items-center gap-1">
-                <span>Login</span>
-                <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover:rotate-180" />
-              </button>
-              <div className="absolute top-full right-0 mt-1 w-52 bg-white border border-gray-100 rounded-sm shadow-xl hidden group-hover:block text-fk-text text-xs overflow-hidden z-50 p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="font-bold text-[#212121]">New customer?</span>
-                  <button onClick={showLogin} className="text-fk-blue hover:underline font-bold">Sign Up</button>
-                </div>
-                <div className="border-t border-gray-100 my-2 pt-2 space-y-2">
-                  <Link to="/account" className="block py-1 px-1 hover:bg-gray-50 rounded-sm font-medium text-sm flex items-center gap-2 text-[#212121]"><User className="w-4 h-4 text-fk-blue" /> My Profile</Link>
-                  <Link to="/account" className="block py-1 px-1 hover:bg-gray-50 rounded-sm font-medium text-sm flex items-center gap-2 text-[#212121]"><ShoppingBag className="w-4 h-4 text-fk-blue" /> Orders</Link>
-                  <Link to="/wishlist" className="block py-1 px-1 hover:bg-gray-50 rounded-sm font-medium text-sm flex items-center gap-2 text-[#212121]"><Heart className="w-4 h-4 text-fk-blue" /> Wishlist</Link>
-                </div>
-              </div>
-            </div>
-          )}
 
           <Link to="/wishlist" className="flex items-center gap-2 hover:text-[#1A1A5E]/80 transition relative text-[#1A1A5E]">
             <span className="relative">
@@ -428,7 +395,7 @@ export default function Header() {
 
             {/* Authentication Footer Container */}
             <div className="p-5 border-t border-[#1A1A5E]/10 bg-[#1A1A5E]/5 backdrop-blur-md">
-              {user ? (
+              {user && (
                 <motion.button 
                   variants={{
                     hidden: { y: 20, opacity: 0 },
@@ -438,17 +405,6 @@ export default function Header() {
                   className="py-3 px-4 w-full bg-red-600/15 hover:bg-red-600/25 border border-red-600/30 text-red-700 font-bold rounded-xl transition-all duration-300 hover:scale-[1.02]"
                 >
                   Logout
-                </motion.button>
-              ) : (
-                <motion.button 
-                  variants={{
-                    hidden: { y: 20, opacity: 0 },
-                    visible: { y: 0, opacity: 1, transition: { type: "spring" } }
-                  }}
-                  onClick={() => { showLogin(); setMobileMenuOpen(false); }} 
-                  className="py-3 px-4 w-full bg-[#1A1A5E] hover:bg-[#1A1A5E]/90 text-white font-bold rounded-xl transition-all duration-300 hover:scale-[1.02] shadow-md shadow-black/10 text-center"
-                >
-                  Login / Sign up
                 </motion.button>
               )}
             </div>

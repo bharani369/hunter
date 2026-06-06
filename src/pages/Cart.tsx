@@ -1,31 +1,23 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
-import { WA_PHONE } from '../data';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-
 import { useProducts } from '../context/ProductContext';
 import { useToast } from '../components/ToastContainer';
+import CheckoutModal from '../components/CheckoutModal';
 
 export default function Cart() {
-  const { items, removeFromCart, updateQuantity, clearCart } = useCart();
-  const { user, showLogin } = useAuth();
-  const { products, updateProduct } = useProducts();
+  const { items, removeFromCart, updateQuantity } = useCart();
+  const { products } = useProducts();
   const showToast = useToast();
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   const totalOriginal = items.reduce((sum, item) => sum + (item.originalPrice * item.quantity), 0);
   const totalDiscounted = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const totalDiscount = totalOriginal - totalDiscounted;
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleOrderWhatsApp = async () => {
-    if (!user) {
-      showLogin();
-      return;
-    }
-    
-    // Check stock for all items
+  const handleOrderWhatsApp = () => {
+    // Check stock for all items before opening the checkout popup
     for (const item of items) {
       const p = products.find(prod => prod.id === item.id);
       if (p && p.stock !== undefined && p.stock < item.quantity) {
@@ -34,84 +26,7 @@ export default function Cart() {
       }
     }
 
-    // Process stock reductions
-    for (const item of items) {
-      const p = products.find(prod => prod.id === item.id);
-      if (p && p.stock !== undefined) {
-         try {
-            await updateProduct(p.id, { stock: p.stock - item.quantity });
-         } catch(e) {
-            console.error("Stock update failed");
-         }
-      }
-    }
-
-    // Award Loyalty Points (1 Point per ₹10 spent)
-    let pointsAwardedText = "";
-    if (user && totalDiscounted > 0) {
-      try {
-        const pointsEarned = Math.round(totalDiscounted / 10);
-        const docRef = doc(db, 'users', user.uid);
-        const snap = await getDoc(docRef);
-        let currentPoints = 0;
-        if (snap.exists()) {
-          const uData = snap.data();
-          currentPoints = uData.loyaltyPoints || 0;
-        }
-        const newPoints = currentPoints + pointsEarned;
-        await setDoc(docRef, { loyaltyPoints: newPoints }, { merge: true });
-        pointsAwardedText = `\n\n🎉 *Loyalty Points Earned:* ${pointsEarned} points!`;
-        showToast(`🎉 Earned ${pointsEarned} Loyalty Points! New total: ${newPoints} points.`);
-      } catch (err) {
-        console.error("Error updating loyalty points", err);
-      }
-    }
-    
-    let msg = `*Hi Hunter! I want to order these items from my Cart:*\n\n`;
-    items.forEach((item, index) => {
-      msg += `${index + 1}. ${item.name}\nSize: ${item.selectedSize}${item.selectedColour ? `\nColour: ${item.selectedColour}` : ''}\nQty: ${item.quantity}\nPrice: ₹${item.price * item.quantity}\n\n`;
-    });
-    msg += `*Total Amount:* ₹${totalDiscounted}`;
-    if (pointsAwardedText) {
-      msg += pointsAwardedText;
-    }
-    
-    if (clearCart) {
-      clearCart();
-    }
-
-    try {
-      const { addDoc, collection } = await import('firebase/firestore');
-      const newOrder = {
-        userId: user.uid,
-        items: items.map(i => ({
-          productId: i.id,
-          name: i.name,
-          size: i.selectedSize,
-          colour: i.selectedColour,
-          quantity: i.quantity,
-          price: i.price,
-          image: i.image
-        })),
-        totalAmount: totalDiscounted,
-        status: 'Ordered',
-        datePlaced: new Date().toISOString(),
-        expectedText: 'Delivery in 2-3 days'
-      };
-      const orderRef = await addDoc(collection(db, 'orders'), newOrder);
-      msg = `*Order ID:* ${orderRef.id}\n\n` + msg;
-    } catch (e) {
-      console.error("Failed to save order to history", e);
-      try {
-        const { handleFirestoreError, OperationType } = await import('../lib/firestore-error');
-        handleFirestoreError(e, OperationType.CREATE, 'orders');
-      } catch (err) {
-        // Suppress bubble
-      }
-    }
-    
-    showToast('Order placed successfully! Redirecting you to WhatsApp...');
-    window.open(`https://wa.me/${WA_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
+    setIsCheckoutOpen(true);
   };
 
   return (
@@ -233,6 +148,24 @@ export default function Cart() {
         </div>
 
       </div>
+
+      {/* Interactive Animated Checkout Popup Grid */}
+      <CheckoutModal
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        items={items.map(it => ({
+          id: it.id,
+          name: it.name,
+          price: it.price,
+          originalPrice: it.originalPrice,
+          discount: it.discount,
+          quantity: it.quantity,
+          selectedSize: it.selectedSize || 'Free Size',
+          selectedColour: it.selectedColour,
+          image: it.image
+        }))}
+        onSuccess={() => setIsCheckoutOpen(false)}
+      />
     </div>
   );
 }

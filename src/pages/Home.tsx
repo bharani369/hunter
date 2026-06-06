@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';                
 import { useProducts } from '../context/ProductContext';
 import { useSEO } from '../hooks/useSEO';
 import HeroBanner from '../components/HeroBanner';
 import WelcomePopup from '../components/WelcomePopup';
 import RecentlyViewed from '../components/RecentlyViewed';
+import { useRef } from 'react';
 
 // Add these imports at the top
 import { motion } from 'motion/react';
@@ -63,6 +65,7 @@ const GALLERY_IMAGES = [
 
 export default function Home() {
   const { products } = useProducts();
+  const spotlightScrollRef = useRef<HTMLDivElement>(null);
 
   useSEO('Hunter | The Style Store', 'Discover the latest clothing styles at Hunter. Shop modern outfits, shirting, and more.');
 
@@ -141,7 +144,7 @@ export default function Home() {
         <HeroBanner />
 
         {/* BRAND IN SPOTLIGHT */}
-        <div className="bg-white rounded-sm shadow-sm overflow-hidden mt-4">
+        <div className="bg-white rounded-sm shadow-sm overflow-hidden mt-4 relative">
            {/* Header */}
            <div className="flex justify-between items-center px-4 py-4 border-b border-gray-100">
               <div className="flex items-center gap-4">
@@ -149,8 +152,17 @@ export default function Home() {
               </div>
               <Link to="/shop" className="hidden lg:block bg-fk-blue text-white px-4 py-2 rounded-sm font-medium text-[13px] shadow">VIEW ALL</Link>
            </div>
+           
+           {/* Scroll Arrow */}
+           <button 
+             onClick={() => spotlightScrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
+             className="absolute right-2 top-24 z-20 lg:hidden bg-white/90 p-2 rounded-full shadow-lg border border-gray-100"
+           >
+             <ChevronRight className="w-5 h-5 text-fk-blue" />
+           </button>
+
            {/* Horizontal scroll grid */}
-           <div className="flex overflow-x-auto scrollbar-hide space-x-0 divide-x divide-gray-100 border-b border-gray-100 relative pb-1">
+           <div className="flex overflow-x-auto scrollbar-hide space-x-0 divide-x divide-gray-100 border-b border-gray-100 relative pb-1" ref={spotlightScrollRef}>
               {products.slice(0, 7).map(product => (
                  <div key={product.id} className="min-w-[170px] max-w-[170px] lg:min-w-[200px] lg:max-w-[200px] flex-shrink-0 p-4 hover:shadow-[0_3px_16px_0_rgba(0,0,0,.11)] transition cursor-pointer bg-white group z-10">
                     <Link to={`/product/${product.id}`} className="block">

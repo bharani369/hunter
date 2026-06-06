@@ -49,9 +49,30 @@
         "expectedText": { "type": "string", "description": "Estimated delivery notice string" }
       },
       "required": ["userId", "items", "totalAmount", "status", "datePlaced"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "User feedback and rating for a product.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique review identifier" },
+        "productId": { "type": "string", "description": "The associated product identifier" },
+        "productName": { "type": "string", "description": "Name of the product for display in admin panel" },
+        "userId": { "type": "string", "description": "UID of the user who wrote the review" },
+        "author": { "type": "string", "description": "Display name of the reviewer" },
+        "text": { "type": "string", "description": "Detailed review thoughts" },
+        "rating": { "type": "number", "description": "Star rating out of 5" },
+        "date": { "type": "string", "description": "Month Year display date e.g. Jun 2026" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Technical creation time" }
+      },
+      "required": ["id", "productId", "text", "rating", "author"]
     }
   },
   "firestore": {
+    "reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Product ratings and reviews contributed by users."
+    },
     "products/{productId}": {
       "schema": "Product",
       "description": "Stock of clothes and products synchronized with frontend"

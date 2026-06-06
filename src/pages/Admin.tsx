@@ -10,13 +10,14 @@ import BillGenerator from '../components/BillGenerator';
 
 import AdminOrders from '../components/AdminOrders';
 import AdminSettings from '../components/AdminSettings';
+import AdminReviews from '../components/AdminReviews';
 
 export default function Admin() {
   const { user } = useAuth();
   const { products, addProduct, updateProduct, deleteProduct, loading } = useProducts();
   const showToast = useToast();
   
-  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'settings'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'settings' | 'reviews'>('products');
 
   const [isEditing, setIsEditing] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<any>({
@@ -41,10 +42,24 @@ export default function Admin() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const multiFileInputRef = useRef<HTMLInputElement>(null);
 
+  const [newImageUrl, setNewImageUrl] = useState('');
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleAddImageUrl = () => {
+    if (!newImageUrl.trim()) {
+      showToast('Please enter a valid image URL');
+      return;
+    }
+    setCurrentProduct((prev: any) => ({
+      ...prev,
+      additionalImages: [...(prev.additionalImages || []), newImageUrl.trim()]
+    }));
+    setNewImageUrl('');
+    showToast('Image URL added successfully!');
+  };
 
   // Mock data for Daily Sales
   const mockDailySales = useMemo(() => {
@@ -64,8 +79,8 @@ export default function Admin() {
     }));
   }, [products]);
 
-  // If user is logged in via Google Auth with correct email, auto-authenticate
-  const isAuthorizedGoogleUser = user && user.email === 'bharanicreator@gmail.com';
+  // If user is logged in via correct email, auto-authenticate
+  const isAuthorizedAdminUser = user && user.email === 'bharanicreator@gmail.com';
 
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +91,7 @@ export default function Admin() {
     }
   };
 
-  if (!isAuthorizedGoogleUser && !isAdminAuthenticated) {
+  if (!isAuthorizedAdminUser && !isAdminAuthenticated) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 px-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 border border-gray-100">
@@ -113,7 +128,8 @@ export default function Admin() {
             </button>
           </form>
           <div className="mt-6 text-center border-t pt-4">
-             <p className="text-sm text-gray-500 mb-4">Or sign in with Google admin account</p>
+             <p className="text-sm text-gray-500 mb-2">Or login as customer using administrator email</p>
+             <p className="text-xs text-gray-400">bharanicreator@gmail.com</p>
           </div>
         </div>
       </div>
@@ -293,11 +309,21 @@ export default function Admin() {
         >
           Settings
         </button>
+        <button
+          onClick={() => setActiveTab('reviews')}
+          className={`pb-4 text-sm font-medium transition-colors ${
+            activeTab === 'reviews' ? 'text-fk-blue border-b-2 border-fk-blue' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Customer Reviews
+        </button>
       </div>
 
       {activeTab === 'orders' && <AdminOrders />}
       
       {activeTab === 'settings' && <AdminSettings />}
+
+      {activeTab === 'reviews' && <AdminReviews />}
 
       {activeTab === 'products' && (
         <>
@@ -465,28 +491,23 @@ export default function Admin() {
                 placeholder="S, M, L, XL"
               />
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Colours (Comma separated)</label>
-              <input 
-                type="text" 
-                value={currentProduct.colours?.join(', ') || ''} 
-                onChange={e => setCurrentProduct({...currentProduct, colours: e.target.value.split(',').map(c => c.trim()).filter(Boolean)})}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-fk-blue"
-                placeholder="Red, Blue, Green, Black"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Select colour of shirts (Images)</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-center relative bg-gray-50 mb-2">
-                <button 
-                  type="button"
-                  onClick={() => multiFileInputRef.current?.click()}
-                  className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md font-medium text-sm hover:bg-gray-300 transition"
-                  disabled={isUploading}
-                >
-                  {isUploading ? 'Uploading...' : 'Upload Images'}
-                </button>
-                <p className="text-xs text-gray-500 mt-2">Select 3 or 4 photos to show variations</p>
+              <label className="block text-sm font-semibold text-gray-800 mb-1">Additional Product Images (for Main Detail Slideshow)</label>
+              
+              {/* Option A: Upload Files */}
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 space-y-3 mb-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-600">Option 1: Upload Files</span>
+                  <button 
+                    type="button"
+                    onClick={() => multiFileInputRef.current?.click()}
+                    className="bg-fk-blue text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-opacity-90 transition shadow-sm"
+                    disabled={isUploading}
+                  >
+                    {isUploading ? 'Uploading...' : 'Browse Local Files'}
+                  </button>
+                </div>
                 <input 
                   type="file" 
                   multiple
@@ -496,24 +517,54 @@ export default function Admin() {
                   className="hidden" 
                 />
               </div>
+
+              {/* Option B: Add URLs */}
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50/50 space-y-2 mb-3">
+                <span className="text-xs font-medium text-gray-600 block">Option 2: Add Image URL</span>
+                <div className="flex gap-2">
+                  <input 
+                    type="url"
+                    value={newImageUrl}
+                    onChange={e => setNewImageUrl(e.target.value)}
+                    placeholder="https://example.com/other-image.jpg"
+                    className="flex-1 w-full border border-gray-300 rounded px-2 py-1.5 text-xs outline-none focus:border-fk-blue focus:ring-1 focus:ring-fk-blue"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddImageUrl}
+                    className="bg-gray-800 text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-gray-700 transition shrink-0"
+                  >
+                    Add URL
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid preview with indices */}
               {currentProduct.additionalImages && currentProduct.additionalImages.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {currentProduct.additionalImages.map((img: string, idx: number) => (
-                    <div key={idx} className="relative w-16 h-16 border rounded overflow-hidden group">
-                      <img src={img} alt={`Var ${idx}`} className="w-full h-full object-cover" />
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const newImgs = [...(currentProduct.additionalImages || [])];
-                          newImgs.splice(idx, 1);
-                          setCurrentProduct({...currentProduct, additionalImages: newImgs});
-                        }}
-                        className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                <div className="space-y-1.5">
+                  <span className="text-xs font-semibold text-gray-500 block">Slideshow Images Queue ({currentProduct.additionalImages.length})</span>
+                  <div className="flex gap-2 flex-wrap max-h-48 overflow-y-auto p-1.5 border border-gray-200 rounded-lg bg-white">
+                    {currentProduct.additionalImages.map((img: string, idx: number) => (
+                      <div key={idx} className="relative w-16 h-16 border rounded overflow-hidden group shadow-sm bg-gray-50">
+                        <img src={img} alt={`Var ${idx}`} className="w-full h-full object-cover" />
+                        <div className="absolute top-0.5 left-0.5 bg-black/60 text-white text-[9px] px-1 rounded font-mono font-bold">
+                          #{idx + 1}
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const newImgs = [...(currentProduct.additionalImages || [])];
+                            newImgs.splice(idx, 1);
+                            setCurrentProduct({...currentProduct, additionalImages: newImgs});
+                          }}
+                          className="absolute inset-0 bg-red-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove from slideshow"
+                        >
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -649,9 +700,7 @@ export default function Admin() {
                     </td>
                     <td className="p-4 text-xs text-gray-500">
                       <div><span className="font-semibold text-gray-600">Sizes:</span> {product.sizes.join(', ')}</div>
-                      {product.colours && product.colours.length > 0 && (
-                        <div className="mt-1"><span className="font-semibold text-gray-600">Colours:</span> {product.colours.join(', ')}</div>
-                      )}
+
                     </td>
                     <td className="p-4 text-right">
                       <button 

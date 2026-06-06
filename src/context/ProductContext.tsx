@@ -23,8 +23,10 @@ const ProductContext = createContext<ProductContextType>({
 export const useProducts = () => useContext(ProductContext);
 
 export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [rawProducts, setRawProducts] = useState<Product[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
   useEffect(() => {
     const productsRef = collection(db, 'products');
@@ -48,12 +50,47 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
         fetchedProducts = INITIAL_PRODUCTS;
       }
       
-      setProducts(fetchedProducts);
-      setLoading(false);
+      setRawProducts(fetchedProducts);
+      setProductsLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const reviewsRef = collection(db, 'reviews');
+    const unsubscribe = onSnapshot(reviewsRef, (snapshot) => {
+      const fetchedReviews = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setReviews(fetchedReviews);
+      setReviewsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Compute products with exact, verified, and real dynamic reviews & rating scores
+  const products = rawProducts.map(product => {
+    const productReviews = reviews.filter(r => r.productId === product.id);
+    if (productReviews.length > 0) {
+      const sum = productReviews.reduce((acc, curr) => acc + (curr.rating || 0), 0);
+      return {
+        ...product,
+        rating: Number((sum / productReviews.length).toFixed(1)),
+        reviews: productReviews.length
+      };
+    } else {
+      return {
+        ...product,
+        rating: 0,
+        reviews: 0
+      };
+    }
+  });
+
+  const loading = productsLoading || reviewsLoading;
 
   const addProduct = async (productData: Omit<Product, 'id'>) => {
     const newDocRef = doc(collection(db, 'products'));

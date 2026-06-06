@@ -1,22 +1,10 @@
 import React from 'react';
 import { WA_PHONE } from '../data';
-import { useAuth } from '../context/AuthContext';
 
 export default function WhatsAppChat() {
-  const { user, showLogin } = useAuth();
-  
-  const handleClick = (e: React.MouseEvent) => {
-    if (!user) {
-      e.preventDefault();
-      showLogin();
-      return;
-    }
-  };
-
   return (
     <a 
       href={`https://wa.me/${WA_PHONE}?text=Hi%20Hunter!%20I%20want%20to%20order.`}
-      onClick={handleClick}
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-[74px] lg:bottom-8 right-4 lg:right-6 z-[175] flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.25)] hover:scale-110 active:scale-95 transition-transform duration-300 group"
