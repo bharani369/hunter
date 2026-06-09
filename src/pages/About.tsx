@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
 
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+
 export default function About() {
+  useDocumentTitle('About Us');
   return (
     <div className="bg-fk-light min-h-screen py-4 w-full">
       <div className="max-w-[1248px] mx-auto px-4">

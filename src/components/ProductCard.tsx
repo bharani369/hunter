@@ -30,7 +30,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       >
         <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
       </button>
-      <div className="relative aspect-[4/5] p-4 bg-white flex items-center justify-center">
+      <div className="relative aspect-square p-4 bg-white flex items-center justify-center">
         <img 
           src={product.image} 
           alt={product.name}

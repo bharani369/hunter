@@ -12,7 +12,10 @@ import AdminOrders from '../components/AdminOrders';
 import AdminSettings from '../components/AdminSettings';
 import AdminReviews from '../components/AdminReviews';
 
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+
 export default function Admin() {
+  useDocumentTitle('Admin Dashboard');
   const { user } = useAuth();
   const { products, addProduct, updateProduct, deleteProduct, loading } = useProducts();
   const showToast = useToast();
@@ -84,7 +87,7 @@ export default function Admin() {
 
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminUsername === 'admin' && adminPassword === 'hunter123') {
+    if (adminUsername === 'huntershop28' && adminPassword === 'hunter@88') {
       setIsAdminAuthenticated(true);
     } else {
       showToast('Invalid username or password');
@@ -137,31 +140,46 @@ export default function Admin() {
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []) as File[];
+    if (!files.length) return;
 
     setIsUploading(true);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        // Compress image using canvas
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 600;
-        const scaleSize = MAX_WIDTH / img.width;
-        canvas.width = MAX_WIDTH;
-        canvas.height = img.height * scaleSize;
-        
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-        setCurrentProduct(prev => ({ ...prev, image: compressedBase64 }));
-        setIsUploading(false);
+    let processedFiles = 0;
+    const base64Images: string[] = [];
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 600;
+          const scaleSize = MAX_WIDTH / img.width;
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scaleSize;
+          
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          base64Images.push(canvas.toDataURL('image/jpeg', 0.8));
+          processedFiles++;
+          
+          if (processedFiles === files.length) {
+            // first image is main, rest are additional
+            const mainImg = base64Images[0];
+            const extraImgs = base64Images.slice(1);
+            setCurrentProduct(prev => ({ 
+              ...prev, 
+              image: mainImg,
+              additionalImages: [...(prev.additionalImages || []), ...extraImgs] 
+            }));
+            setIsUploading(false);
+          }
+        };
+        img.src = event.target?.result as string;
       };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleAdditionalImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -601,6 +619,7 @@ export default function Admin() {
               )}
               <input 
                 type="file" 
+                multiple
                 ref={fileInputRef} 
                 onChange={handleImageUpload} 
                 accept="image/*" 

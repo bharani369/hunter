@@ -4,7 +4,10 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestore-logger';
 
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+
 export default function TrackOrder() {
+  useDocumentTitle('Track Order');
   const [orderId, setOrderId] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);

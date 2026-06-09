@@ -107,30 +107,34 @@ export default function CheckoutModal({ isOpen, onClose, items, singleItemMode =
 
   // Helper to compile a crystal-clear, emoji-compatible message text for WhatsApp
   const getWhatsAppMessageText = (orderId: string) => {
-    let msg = `*Hi Hunter! I have placed an order and want to verify it!🛒*\n\n`;
-    msg += `👤 *Customer Details:*\n`;
-    msg += `🔹 *Name:* ${name.trim()}\n`;
-    msg += `🔹 *Phone:* ${phone.trim()}\n`;
-    msg += `🔹 *Address:* ${address.trim()}\n\n`;
+    let msg = `*Hi Hunter! I have placed an order and want to verify it!*\n\n`;
+    msg += `*Customer Details:*\n`;
+    msg += `- *Name:* ${name.trim()}\n`;
+    msg += `- *Phone:* ${phone.trim()}\n`;
+    msg += `- *Address:* ${address.trim()}\n\n`;
     
     if (orderId) {
-      msg += `🆔 *Order ID:* #${orderId}\n\n`;
+      msg += `*Order ID:* #${orderId}\n\n`;
     }
 
-    msg += `📦 *Order Items:*\n`;
+    msg += `*Order Items:*\n`;
     items.forEach((item, index) => {
       msg += `${index + 1}. *${item.name}*\n`;
+      if (item.image && item.image.startsWith('http')) {
+        msg += `   - Image: ${item.image}\n`;
+      }
+      msg += `   - Product Link: ${window.location.origin}/product/${item.id}\n`;
       msg += `   - Size: ${item.selectedSize}\n`;
       if (item.selectedColour) msg += `   - Colour: ${item.selectedColour}\n`;
       msg += `   - Quantity: ${item.quantity}\n`;
       msg += `   - Price: Rs. ${item.price * item.quantity}\n\n`;
     });
 
-    msg += `💰 *Summary:*\n`;
+    msg += `*Summary:*\n`;
     msg += `- *Subtotal:* Rs. ${totalAmount}\n`;
-    msg += `- *Delivery:* FREE 🚚\n`;
+    msg += `- *Delivery:* FREE\n`;
     msg += `- *Total Savings:* Rs. ${totalSavings} (Save ${Math.round((totalSavings / (totalAmount + totalSavings)) * 100) || 0}%)\n\n`;
-    msg += `Looking forward to quick delivery confirmation! Thank you, Hunter! 🏹`;
+    msg += `Looking forward to quick delivery confirmation! Thank you, Hunter!`;
     return msg;
   };
 
@@ -259,9 +263,6 @@ export default function CheckoutModal({ isOpen, onClose, items, singleItemMode =
       if (!singleItemMode && clearCart) {
         clearCart();
       }
-
-      // Automatically & immediately redirect or open WhatsApp!
-      redirectToWhatsApp(newOrderId);
 
       // Initiate gorgeous transition
       setStep('redirecting');

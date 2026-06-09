@@ -39,10 +39,13 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+
 export default function ProductDetails() {
   const { id } = useParams();
   const { products, loading, updateProduct } = useProducts();
   const product = products.find(p => p.id === id);
+  useDocumentTitle(product?.name || 'Product');
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const showToast = useToast();
@@ -140,11 +143,7 @@ export default function ProductDetails() {
   const allImages = product ? [product.image, ...(product.additionalImages || [])] : [];
 
   useEffect(() => {
-    if (!product || allImages.length <= 1 || isHovered) return;
-    const interval = setInterval(() => {
-      setCurrentSlideIndex((prevIndex) => (prevIndex + 1) % allImages.length);
-    }, 4000);
-    return () => clearInterval(interval);
+    // Auto slideshow removed
   }, [allImages.length, isHovered, id]);
 
   const seoTitle = product ? `${product.name} - Buy Online | Hunter` : 'Product Details | Hunter';
@@ -184,7 +183,7 @@ export default function ProductDetails() {
       <div className="max-w-[1248px] mx-auto px-2 lg:px-4">
         <div className="bg-white shadow-sm flex flex-col md:flex-row rounded-sm overflow-hidden animate-pulse">
           <div className="w-full md:w-[40%] border-r border-[#f0f0f0] p-4 lg:p-8 flex flex-col items-center">
-             <div className="w-full aspect-[4/5] bg-gray-200 border border-[#f0f0f0] rounded-sm"></div>
+             <div className="w-full aspect-square bg-gray-200 border border-[#f0f0f0] rounded-sm"></div>
              <div className="flex gap-2 w-full mt-4">
                {[...Array(4)].map((_, i) => <div key={i} className="w-16 h-16 shrink-0 bg-gray-200 rounded"></div>)}
              </div>
@@ -382,23 +381,42 @@ export default function ProductDetails() {
           {/* LEFT: IMAGE W/ SLIDESHOW */}
           <div className="w-full md:w-[40%] border-r border-[#f0f0f0] p-4 lg:p-8 flex flex-col items-center">
              <div 
+               className="relative w-full aspect-square group"
                onMouseEnter={() => setIsHovered(true)} 
                onMouseLeave={() => setIsHovered(false)}
-               className="relative w-full aspect-[4/5] flex justify-center group overflow-hidden border border-[#f0f0f0] bg-white rounded-md"
              >
-                {/* Animate slides smoothly */}
-                <AnimatePresence mode="wait">
-                  <motion.img 
-                     key={currentSlideIndex}
-                     src={displayImage} 
-                     alt={product.name} 
-                     initial={{ opacity: 0.2, scale: 0.98 }}
-                     animate={{ opacity: 1, scale: 1 }}
-                     exit={{ opacity: 0.2, scale: 1.02 }}
-                     transition={{ duration: 0.35, ease: "easeInOut" }}
-                     className="w-full h-full object-contain cursor-crosshair transform origin-center transition-transform duration-200 hover:scale-150"
-                  />
-                </AnimatePresence>
+               <div 
+                 className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide border border-[#f0f0f0] bg-white rounded-md"
+                 onScroll={(e) => {
+                   const container = e.currentTarget;
+                   const index = Math.round(container.scrollLeft / container.clientWidth);
+                   if (index !== currentSlideIndex) setCurrentSlideIndex(index);
+                 }}
+               >
+                  {allImages.length === 0 ? (
+                    <div className="w-full h-full shrink-0 snap-center flex justify-center items-center">
+                      <img src={displayImage} alt={product.name} className="w-full h-full object-contain" />
+                    </div>
+                  ) : (
+                    allImages.map((img, idx) => (
+                      <div 
+                        key={idx} 
+                        className="w-full h-full shrink-0 snap-center flex justify-center items-center relative"
+                        ref={(el) => {
+                          if (currentSlideIndex === idx && el && !isHovered) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                          }
+                        }}
+                      >
+                        <img 
+                          src={img} 
+                          alt={`${product.name} - ${idx + 1}`} 
+                          className={`w-full h-full object-contain ${isHovered ? 'cursor-crosshair transform origin-center transition-transform duration-200 hover:scale-150' : ''}`}
+                        />
+                      </div>
+                    ))
+                  )}
+               </div>
 
                 {/* Left arrow navigation overlay */}
                 {allImages.length > 1 && (
@@ -429,32 +447,11 @@ export default function ProductDetails() {
                     <ChevronRight className="w-5 h-5 text-gray-700" />
                   </button>
                 )}
-
-                {/* Auto Play indication dots overlay at bottom center */}
-                {allImages.length > 1 && (
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full shadow-inner">
-                    {allImages.map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCurrentSlideIndex(idx);
-                        }}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${
-                          currentSlideIndex === idx 
-                            ? 'w-4 bg-yellow-400' 
-                            : 'w-1.5 bg-white/60 hover:bg-white'
-                        }`}
-                        title={`Slide ${idx + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
              </div>
 
-             {/* Thumbnails */}
+             {/* Thumbnails (Manual Scroll) */}
              {allImages.length > 1 && (
-               <div className="flex gap-2 w-full mt-4 overflow-x-auto pb-2 justify-start scrollbar-thin">
+               <div className="flex gap-2 w-full mt-4 overflow-x-auto pb-2 justify-start scrollbar-thin scroll-smooth">
                  {allImages.map((img, idx) => (
                    <button 
                      key={idx}
@@ -569,20 +566,7 @@ export default function ProductDetails() {
              </div>
              <div className="text-[14px] text-[#212121] opacity-90 mb-6">inclusive of all taxes</div>
 
-             {/* Offers */}
-             <div className="mb-6">
-                <h3 className="text-[16px] font-medium mb-3">Available offers</h3>
-                <ul className="space-y-2 text-[14px]">
-                  <li className="flex gap-2 items-start">
-                    <span className="text-[#388e3c] shrink-0 mt-0.5">🏷️</span>
-                    <span><strong className="font-medium text-[#212121]">Bank Offer</strong> 5% Cashback on Flipkart Axis Bank Card <span className="text-fk-blue cursor-pointer">T&C</span></span>
-                  </li>
-                  <li className="flex gap-2 items-start">
-                    <span className="text-[#388e3c] shrink-0 mt-0.5">🏷️</span>
-                    <span><strong className="font-medium text-[#212121]">Special Price</strong> Get extra discounted price by ordering via WhatsApp <span className="text-fk-blue cursor-pointer">T&C</span></span>
-                  </li>
-                </ul>
-             </div>
+             {/* Offers Removed */}
 
              {/* Size Selector */}
              {product.sizes && product.sizes.length > 0 && product.sizes[0] !== "Free Size" && (

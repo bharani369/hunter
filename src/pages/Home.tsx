@@ -1,11 +1,11 @@
-import { Link } from 'react-router-dom';
+import { useRef, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';                
 import { useProducts } from '../context/ProductContext';
 import { useSEO } from '../hooks/useSEO';
 import HeroBanner from '../components/HeroBanner';
 import WelcomePopup from '../components/WelcomePopup';
 import RecentlyViewed from '../components/RecentlyViewed';
-import { useRef } from 'react';
 
 // Add these imports at the top
 import { motion } from 'motion/react';
@@ -63,11 +63,26 @@ const GALLERY_IMAGES = [
   "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh9ospt9ioO1d4WEVff_Sk915jIdFJeubgRn_qWksFwT0KvU3XvgGfCO3QFrMxDTzTVWbbDumyhfxx0_W4KtcO14faKbHV_d9yqgX9mVe97_c94jCS3iza33blV5iVFMMxXAevHuAwrhYAKKyphre77fryiie9kJpD2i0RQhELpc3t7hSTLHMnvS5ZvCgNM/s320/unnamed%20(1).jpg"
 ];
 
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+
 export default function Home() {
+  useDocumentTitle();
   const { products } = useProducts();
   const spotlightScrollRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
 
   useSEO('Hunter | The Style Store', 'Discover the latest clothing styles at Hunter. Shop modern outfits, shirting, and more.');
+
+  useEffect(() => {
+    if (location.hash) {
+      const element = document.getElementById(location.hash.replace('#', ''));
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [location]);
 
   return (
     <div className="bg-fk-light w-full min-h-screen">
@@ -250,8 +265,23 @@ export default function Home() {
         {/* Recently Viewed Items based on History */}
         <RecentlyViewed title="Based On Your Viewing History" />
 
+        {/* ABOUT US SECTION */}
+        <div id="about" className="bg-white rounded-sm shadow-sm p-6 md:p-10 flex flex-col md:flex-row items-center gap-8 mt-4 border-t border-gray-100">
+           <div className="w-full md:w-1/2">
+             <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjcSMYEwkeaD-VBL4AVJwCLm-NCBDkslRaAu_PDpq4uougJJENcwSGVcrkfIokdRiSMWQB3xqr6tKrNy071rNpzjzq6AaxBCaXRPdwbRY1XJgD7uiCaaBiCKp-V53Ny7UK6HRm2kJatWV-TBxCJg1EF8CalkL4Q12m-IJDSTjuIcjUhV8ns3MDsxmKevvpl/s1600/452052041_529242162776191_3750077501653396213_n.jpg" alt="Store Front" className="w-full rounded-sm shadow-sm aspect-video object-cover" />
+           </div>
+           <div className="w-full md:w-1/2 text-[15px] text-[#212121] leading-relaxed relative">
+             <h2 className="text-2xl lg:text-3xl font-bold mb-4 text-fk-text relative z-10">About Hunter Mens & Juniors</h2>
+             <p className="mb-4 text-fk-gray">From a modest beginning in Namakkal to becoming one of the most trusted fashion hubs in Tamil Nadu, Hunter stands as a testament to quality and style.</p>
+             <p className="mb-6 text-fk-gray">We believe that fashion is an extension of your personality. Whether you're dressing up for a boardroom meeting, a casual weekend getaway, or styling your little ones, our curated collections ensure you look exceptional without compromising on comfort.</p>
+             <div className="bg-fk-light p-4 border border-gray-100 rounded text-sm text-fk-blue font-medium shadow-sm">
+                Established in 2018 | 2 Premium Retail Outlets | Shipping Pan-India
+             </div>
+           </div>
+        </div>
+
         {/* TRUST SIGNALS */}
-        <div className="bg-white rounded-sm shadow-sm p-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center mt-4 border-t border-gray-100">
+        <div className="bg-white rounded-sm shadow-sm p-6 grid grid-cols-2 lg:grid-cols-3 gap-6 text-center mt-4 border-t border-gray-100">
            <div className="flex flex-col items-center gap-3">
              <span className="text-3xl">🛡️</span>
              <h4 className="text-[14px] font-medium text-fk-text">100% Secure</h4>
@@ -262,11 +292,7 @@ export default function Home() {
              <h4 className="text-[14px] font-medium text-fk-text">Pan-India Delivery</h4>
              <p className="text-[12px] text-fk-gray">Via WhatsApp Order</p>
            </div>
-           <div className="flex flex-col items-center gap-3">
-             <span className="text-3xl">⭐</span>
-             <h4 className="text-[14px] font-medium text-fk-text">4.8 Rated</h4>
-             <p className="text-[12px] text-fk-gray">8771+ Reviews</p>
-           </div>
+           {/* Rating removed */}
            <div className="flex flex-col items-center gap-3">
              <span className="text-3xl">🔄</span>
              <h4 className="text-[14px] font-medium text-fk-text">Easy Exchange</h4>

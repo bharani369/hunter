@@ -69,10 +69,7 @@ export default function HeroBanner() {
   ];
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      handleNext();
-    }, 6000);
-    return () => clearInterval(timer);
+    // Auto slideshow removed
   }, [currentIndex]);
 
   const handlePrev = () => {

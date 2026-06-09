@@ -40,7 +40,10 @@ interface CustomProfile {
   loyaltyPoints?: number;
 }
 
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+
 export default function Account() {
+  useDocumentTitle('My Account');
   const { user, logout } = useAuth();
   const { items, removeFromCart, updateQuantity, addToCart } = useCart();
   const { wishlistItems, toggleWishlist } = useWishlist();

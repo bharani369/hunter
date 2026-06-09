@@ -5,7 +5,10 @@ import ProductCard from '../components/ProductCard';
 import { useProducts } from '../context/ProductContext';
 import { useSEO } from '../hooks/useSEO';
 
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+
 export default function Shop() {
+  useDocumentTitle('Shop');
   const { products, loading } = useProducts();
   const { search } = useLocation();
 

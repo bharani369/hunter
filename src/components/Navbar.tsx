@@ -20,7 +20,7 @@ export default function Navbar() {
   const links = [
     { name: 'Home', path: '/' },
     { name: 'Shop', path: '/shop' },
-    { name: 'About Us', path: '/about' },
+    { name: 'About Us', path: '/#about' },
     { name: 'Contact', path: '/contact' },
   ];
 

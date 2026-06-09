@@ -5,7 +5,10 @@ import { useProducts } from '../context/ProductContext';
 import { useToast } from '../components/ToastContainer';
 import CheckoutModal from '../components/CheckoutModal';
 
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+
 export default function Cart() {
+  useDocumentTitle('Your Cart');
   const { items, removeFromCart, updateQuantity } = useCart();
   const { products } = useProducts();
   const showToast = useToast();

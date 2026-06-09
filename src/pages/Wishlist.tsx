@@ -4,7 +4,10 @@ import { Link } from 'react-router-dom';
 import { Trash2, ShoppingBag } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+
 export default function Wishlist() {
+  useDocumentTitle('Wishlist');
   const { wishlistItems, removeFromWishlist } = useWishlist();
 
   if (wishlistItems.length === 0) {

@@ -8,6 +8,7 @@ import Footer from './Footer';
 import WhatsAppChat from './WhatsAppChat';
 import ToastContainer from './ToastContainer';
 import { useCart } from '../context/CartContext';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
 export default function Layout() {
   const { cartCount } = useCart();
@@ -15,6 +16,7 @@ export default function Layout() {
   const [progress, setProgress] = useState(0);
   const location = useLocation();
   const lenisRef = useRef<Lenis | null>(null);
+  const isOnline = useOnlineStatus();
 
   // Initialize Lenis smooth scroll
   useEffect(() => {
@@ -86,6 +88,21 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Offline Banner */}
+      <AnimatePresence>
+        {!isOnline && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-0 left-0 right-0 z-[10000] bg-red-500 text-white text-center py-2 px-4 shadow-md font-medium text-sm flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">wifi_off</span>
+            You are currently offline. Please check your internet connection.
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top Page Progress Indicator */}
       <AnimatePresence>
         {navigating && (

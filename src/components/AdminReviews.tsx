@@ -54,37 +54,38 @@ export default function AdminReviews() {
 
   const handleDeleteReview = async (reviewId: string, productId: string) => {
     console.log('Attempting to delete review:', reviewId, 'Product ID:', productId);
-    if (!window.confirm('Are you sure you want to delete this review? This action is permanent.')) {
-      return;
-    }
+    // Removed window.confirm because it is often blocked in iframes
     try {
       if (!productId) {
-        throw new Error('Product ID is missing');
+        console.warn('Product ID is missing for this review. Proceeding to delete review without updating product stats.');
       }
+      
       // 1. Delete review from Firestore
       await deleteDoc(doc(db, 'reviews', reviewId));
 
-      // 2. Load and recalculate product ratings and counts
-      // Filter out the deleted review from our current local list
-      const remainingReviewsForProduct = reviews.filter(
-        (r) => r.productId === productId && r.id !== reviewId
-      );
+      if (productId) {
+        // 2. Load and recalculate product ratings and counts
+        // Filter out the deleted review from our current local list
+        const remainingReviewsForProduct = reviews.filter(
+          (r) => r.productId === productId && r.id !== reviewId
+        );
 
-      let newAverageRating = 4.5; // default preset rating
-      const newTotalReviews = remainingReviewsForProduct.length;
+        let newAverageRating = 4.5; // default preset rating
+        const newTotalReviews = remainingReviewsForProduct.length;
 
-      if (newTotalReviews > 0) {
-        const sumRatings = remainingReviewsForProduct.reduce((sum, r) => sum + r.rating, 0);
-        newAverageRating = Number((sumRatings / newTotalReviews).toFixed(1));
+        if (newTotalReviews > 0) {
+          const sumRatings = remainingReviewsForProduct.reduce((sum, r) => sum + r.rating, 0);
+          newAverageRating = Number((sumRatings / newTotalReviews).toFixed(1));
+        }
+
+        // 3. Update product document in firestore
+        await updateDoc(doc(db, 'products', productId), {
+          rating: newAverageRating,
+          reviews: newTotalReviews
+        });
       }
 
-      // 3. Update product document in firestore
-      await updateDoc(doc(db, 'products', productId), {
-        rating: newAverageRating,
-        reviews: newTotalReviews
-      });
-
-      showToast('Review deleted successfully, and product metrics updated!');
+      showToast('Review deleted successfully' + (productId ? ', and product metrics updated!' : '!'));
     } catch (error) {
       console.error('Error deleting review:', error);
       showToast('Failed to delete review: ' + (error instanceof Error ? error.message : String(error)));
