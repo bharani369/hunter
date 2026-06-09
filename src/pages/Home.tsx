@@ -6,6 +6,7 @@ import { useSEO } from '../hooks/useSEO';
 import HeroBanner from '../components/HeroBanner';
 import WelcomePopup from '../components/WelcomePopup';
 import RecentlyViewed from '../components/RecentlyViewed';
+import { LazyImage } from '../components/LazyImage';
 
 // Add these imports at the top
 import { motion } from 'motion/react';
@@ -182,7 +183,7 @@ export default function Home() {
                  <div key={product.id} className="min-w-[170px] max-w-[170px] lg:min-w-[200px] lg:max-w-[200px] flex-shrink-0 p-4 hover:shadow-[0_3px_16px_0_rgba(0,0,0,.11)] transition cursor-pointer bg-white group z-10">
                     <Link to={`/product/${product.id}`} className="block">
                       <div className="h-[150px] w-full flex items-center justify-center mb-4">
-                        <img src={product.image} className="max-h-full max-w-full object-contain group-hover:scale-105 transition duration-300" alt={product.name} loading="lazy" />
+                        <LazyImage src={product.image} className="max-h-full max-w-full object-contain group-hover:scale-105 transition duration-300" alt={product.name} wrapperClassName="w-full h-full flex items-center justify-center" />
                       </div>
                       <div className="text-center">
                         <div className="text-[14px] font-medium text-[#212121] truncate mb-1">{product.name}</div>
@@ -251,7 +252,7 @@ export default function Home() {
                  <div key={product.id} className="min-w-[170px] max-w-[170px] lg:min-w-[200px] lg:max-w-[200px] flex-shrink-0 p-4 hover:shadow-[0_3px_16px_0_rgba(0,0,0,.11)] transition cursor-pointer bg-white group z-10">
                     <Link to={`/product/${product.id}`} className="block text-center text-sm">
                       <div className="h-[150px] w-full flex items-center justify-center mb-4">
-                         <img src={product.image} className="max-h-full max-w-full object-contain group-hover:scale-105 transition" alt={product.name} loading="lazy" />
+                         <LazyImage src={product.image} className="max-h-full max-w-full object-contain group-hover:scale-105 transition" alt={product.name} wrapperClassName="w-full h-full flex items-center justify-center" />
                       </div>
                       <div className="font-medium text-fk-text truncate mb-1">{product.name}</div>
                       <div className="text-fk-green font-normal mb-1">Top Rated</div>

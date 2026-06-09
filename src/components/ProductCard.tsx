@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { Product } from '../types';
 import { useWishlist } from '../context/WishlistContext';
+import { LazyImage } from './LazyImage';
 
 interface ProductCardProps {
   product: Product;
@@ -31,11 +32,11 @@ export default function ProductCard({ product }: ProductCardProps) {
         <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
       </button>
       <div className="relative aspect-square p-4 bg-white flex items-center justify-center">
-        <img 
+        <LazyImage 
           src={product.image} 
           alt={product.name}
           className="w-full h-full object-contain"
-          loading="lazy"
+          wrapperClassName="w-full h-full flex"
         />
         {/* Badges */}
         {product.tag && (

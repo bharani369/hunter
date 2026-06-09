@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useProducts } from '../context/ProductContext';
 import { useToast } from '../components/ToastContainer';
 import CheckoutModal from '../components/CheckoutModal';
+import { LazyImage } from '../components/LazyImage';
 
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
@@ -56,7 +57,7 @@ export default function Cart() {
                        <div key={item.cartId} className="flex flex-col p-4 border-b border-gray-100 hover:bg-gray-50 transition">
                           <div className="flex gap-4">
                              <div className="w-[112px] shrink-0">
-                                <img src={item.image} alt={item.name} className="w-full object-contain aspect-square" />
+                                <LazyImage src={item.image} alt={item.name} className="w-full object-contain aspect-square" wrapperClassName="w-full flex" />
                                 {/* Qty buttons underneath image */}
                                 <div className="flex items-center justify-center gap-2 mt-4">
                                    <button 

@@ -14,6 +14,7 @@ import { useSEO } from '../hooks/useSEO';
 import RecentlyViewed from '../components/RecentlyViewed';
 import { motion, AnimatePresence } from 'motion/react';
 import CheckoutModal from '../components/CheckoutModal';
+import { LazyImage } from '../components/LazyImage';
 
 enum OperationType {
   CREATE = 'create',
@@ -55,7 +56,9 @@ export default function ProductDetails() {
   const [pincode, setPincode] = useState('');
   const [deliveryMsg, setDeliveryMsg] = useState('');
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [isAutoPlayEnabled, setIsAutoPlayEnabled] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
+  const sliderRef = React.useRef<HTMLDivElement>(null);
   const [reviewSort, setReviewSort] = useState('recent');
   const [shareState, setShareState] = useState<'idle' | 'copied'>('idle');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -140,11 +143,9 @@ export default function ProductDetails() {
     setCurrentSlideIndex(0);
   }, [id]);
 
-  const allImages = product ? [product.image, ...(product.additionalImages || [])] : [];
 
-  useEffect(() => {
-    // Auto slideshow removed
-  }, [allImages.length, isHovered, id]);
+
+  const allImages = product ? [product.image, ...(product.additionalImages || [])] : [];
 
   const seoTitle = product ? `${product.name} - Buy Online | Hunter` : 'Product Details | Hunter';
   const seoDesc = product ? `Buy ${product.name} at Hunter. ${product.description ? product.description.substring(0, 100) + '...' : ''}` : 'View product details at Hunter';
@@ -155,28 +156,44 @@ export default function ProductDetails() {
   }, [product]);
 
   useEffect(() => {
-    if (product) {
-      try {
-        const recentlyViewedKey = 'hunter_recently_viewed';
-        const stored = localStorage.getItem(recentlyViewedKey);
-        let viewedIds: string[] = [];
-        if (stored) {
-          viewedIds = JSON.parse(stored);
-          if (!Array.isArray(viewedIds)) {
-            viewedIds = [];
-          }
+    if (!product) return;
+    try {
+      const recentlyViewedKey = 'hunter_recently_viewed';
+      const stored = localStorage.getItem(recentlyViewedKey);
+      let viewedIds: string[] = [];
+      if (stored) {
+        viewedIds = JSON.parse(stored);
+        if (!Array.isArray(viewedIds)) {
+          viewedIds = [];
         }
-        
-        viewedIds = viewedIds.filter((id) => id !== product.id);
-        viewedIds.unshift(product.id);
-        viewedIds = viewedIds.slice(0, 10);
-        
-        localStorage.setItem(recentlyViewedKey, JSON.stringify(viewedIds));
-      } catch (err) {
-        console.error("Error setting recently viewed history:", err);
       }
+      
+      viewedIds = viewedIds.filter((id) => id !== product.id);
+      viewedIds.unshift(product.id);
+      viewedIds = viewedIds.slice(0, 10);
+      
+      localStorage.setItem(recentlyViewedKey, JSON.stringify(viewedIds));
+    } catch (err) {
+      console.error("Error setting recently viewed history:", err);
     }
   }, [product]);
+
+  useEffect(() => {
+    if (!product || allImages.length <= 1 || !isAutoPlayEnabled) return;
+    
+    const interval = setInterval(() => {
+      setCurrentSlideIndex(prev => {
+        const next = (prev + 1) % allImages.length;
+        if (sliderRef.current) {
+          const slideWidth = sliderRef.current.clientWidth;
+          sliderRef.current.scrollTo({ left: slideWidth * next, behavior: 'smooth' });
+        }
+        return next;
+      });
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [allImages.length, isAutoPlayEnabled, product]);
 
   if (loading) return (
     <div className="bg-fk-light min-h-screen py-2 lg:py-4 w-full">
@@ -378,40 +395,40 @@ export default function ProductDetails() {
       <div className="max-w-[1248px] mx-auto px-2 lg:px-4">
         <div className="bg-white shadow-sm flex flex-col md:flex-row rounded-sm overflow-hidden">
           
-          {/* LEFT: IMAGE W/ SLIDESHOW */}
-          <div className="w-full md:w-[40%] border-r border-[#f0f0f0] p-4 lg:p-8 flex flex-col items-center">
-             <div 
-               className="relative w-full aspect-square group"
+           {/* LEFT: IMAGE W/ SLIDESHOW */}
+           <div className="w-full md:w-[40%] border-r border-[#f0f0f0] p-4 lg:p-8 flex flex-col items-center">
+              <div 
+               className="relative w-full max-w-[500px] aspect-square group"
                onMouseEnter={() => setIsHovered(true)} 
                onMouseLeave={() => setIsHovered(false)}
              >
                <div 
+                 ref={sliderRef}
                  className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide border border-[#f0f0f0] bg-white rounded-md"
+                 onTouchStart={() => setIsAutoPlayEnabled(false)}
                  onScroll={(e) => {
                    const container = e.currentTarget;
                    const index = Math.round(container.scrollLeft / container.clientWidth);
-                   if (index !== currentSlideIndex) setCurrentSlideIndex(index);
+                   if (index !== currentSlideIndex && !isNaN(index)) {
+                     setCurrentSlideIndex(index);
+                   }
                  }}
                >
                   {allImages.length === 0 ? (
                     <div className="w-full h-full shrink-0 snap-center flex justify-center items-center">
-                      <img src={displayImage} alt={product.name} className="w-full h-full object-contain" />
+                      <LazyImage src={displayImage} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" wrapperClassName="w-full h-full flex" />
                     </div>
                   ) : (
                     allImages.map((img, idx) => (
                       <div 
                         key={idx} 
                         className="w-full h-full shrink-0 snap-center flex justify-center items-center relative"
-                        ref={(el) => {
-                          if (currentSlideIndex === idx && el && !isHovered) {
-                            el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                          }
-                        }}
                       >
-                        <img 
+                        <LazyImage 
                           src={img} 
                           alt={`${product.name} - ${idx + 1}`} 
                           className={`w-full h-full object-contain ${isHovered ? 'cursor-crosshair transform origin-center transition-transform duration-200 hover:scale-150' : ''}`}
+                          wrapperClassName="w-full h-full flex"
                         />
                       </div>
                     ))
@@ -424,7 +441,12 @@ export default function ProductDetails() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setCurrentSlideIndex(prev => (prev - 1 + allImages.length) % allImages.length);
+                      setIsAutoPlayEnabled(false);
+                      const next = (currentSlideIndex - 1 + allImages.length) % allImages.length;
+                      setCurrentSlideIndex(next);
+                      if (sliderRef.current) {
+                        sliderRef.current.scrollTo({ left: sliderRef.current.clientWidth * next, behavior: 'smooth' });
+                      }
                     }}
                     className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center shadow-lg border border-gray-150 hover:scale-110 active:scale-90 transition-all duration-200"
                     title="Previous Slide"
@@ -439,7 +461,12 @@ export default function ProductDetails() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setCurrentSlideIndex(prev => (prev + 1) % allImages.length);
+                      setIsAutoPlayEnabled(false);
+                      const next = (currentSlideIndex + 1) % allImages.length;
+                      setCurrentSlideIndex(next);
+                      if (sliderRef.current) {
+                        sliderRef.current.scrollTo({ left: sliderRef.current.clientWidth * next, behavior: 'smooth' });
+                      }
                     }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center shadow-lg border border-gray-150 hover:scale-110 active:scale-90 transition-all duration-200"
                     title="Next Slide"
@@ -455,7 +482,13 @@ export default function ProductDetails() {
                  {allImages.map((img, idx) => (
                    <button 
                      key={idx}
-                     onClick={() => setCurrentSlideIndex(idx)}
+                     onClick={() => {
+                       setIsAutoPlayEnabled(false);
+                       setCurrentSlideIndex(idx);
+                       if (sliderRef.current) {
+                         sliderRef.current.scrollTo({ left: sliderRef.current.clientWidth * idx, behavior: 'smooth' });
+                       }
+                     }}
                      className={`w-16 h-16 shrink-0 border-2 rounded overflow-hidden transition-all duration-200 ${
                        currentSlideIndex === idx 
                          ? 'border-fk-blue scale-[1.03] shadow-md' 

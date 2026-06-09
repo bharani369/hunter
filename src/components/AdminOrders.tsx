@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import { useToast } from './ToastContainer';
 import { handleFirestoreError, OperationType } from '../lib/firestore-logger';
+import { LazyImage } from './LazyImage';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -84,7 +85,7 @@ export default function AdminOrders() {
                   <div className="space-y-2">
                     {order.items?.map((item: any, idx: number) => (
                       <div key={idx} className="flex gap-2 items-center">
-                        <img src={item.image} alt="" className="w-8 h-8 rounded border object-cover" />
+                        <LazyImage src={item.image} alt="" className="w-8 h-8 rounded border object-cover" wrapperClassName="shrink-0" />
                         <div className="text-xs text-gray-700">
                           <p className="font-medium truncate max-w-[150px]">{item.name}</p>
                           <p className="text-gray-500">Qty: {item.quantity} | {item.size} {item.colour}</p>

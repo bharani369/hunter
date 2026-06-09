@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import { LazyImage } from '../components/LazyImage';
 import { doc, getDoc, setDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestore-logger';
@@ -486,7 +487,7 @@ export default function Account() {
                           {order.items.map((item, idx) => (
                             <div key={idx} className="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                               <div className="flex gap-3">
-                                <img src={item.image} alt={item.name} className="w-16 h-16 object-cover border border-gray-100 rounded-sm shadow-sm" />
+                                <LazyImage src={item.image} alt={item.name} className="w-16 h-16 object-cover border border-gray-100 rounded-sm shadow-sm" wrapperClassName="shrink-0" />
                                 <div>
                                   <h4 className="font-semibold text-fk-text text-sm line-clamp-1">{item.name}</h4>
                                   <p className="text-xs text-fk-gray mt-1">Size: <span className="text-fk-text font-medium">{item.size}</span> | Colour: <span className="text-fk-text font-medium">{item.colour}</span></p>
@@ -588,7 +589,7 @@ export default function Account() {
                           {order.items.map((item, idx) => (
                             <div key={idx} className="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                               <div className="flex gap-3">
-                                <img src={item.image} alt={item.name} className="w-16 h-16 object-cover border border-gray-100 rounded-sm grayscale-[0.2]" />
+                                <LazyImage src={item.image} alt={item.name} className="w-16 h-16 object-cover border border-gray-100 rounded-sm grayscale-[0.2]" wrapperClassName="shrink-0" />
                                 <div>
                                   <h4 className="font-semibold text-fk-text text-sm line-clamp-1">{item.name}</h4>
                                   <p className="text-xs text-fk-gray mt-1">Size: <span className="text-fk-text font-medium">{item.size}</span> | Colour: <span className="text-fk-text font-medium">{item.colour}</span></p>
@@ -645,7 +646,7 @@ export default function Account() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {wishlistItems.map((product) => (
                       <div key={product.id} className="border border-gray-200 rounded-sm p-4 hover:shadow-md transition relative flex gap-4">
-                        <img src={product.image} alt={product.name} className="w-20 h-20 object-cover border border-gray-100 rounded-sm shrink-0" />
+                        <LazyImage src={product.image} alt={product.name} className="w-20 h-20 object-cover border border-gray-100 rounded-sm" wrapperClassName="shrink-0" />
                         <div className="flex-grow min-w-0 pr-8">
                           <span className="text-[11px] bg-fk-blue/10 text-fk-blue text-xs font-semibold px-2 py-0.5 rounded uppercase">{product.tag || 'Trending'}</span>
                           <h4 className="font-bold text-fk-text text-sm line-clamp-1 mt-1">{product.name}</h4>
@@ -710,7 +711,7 @@ export default function Account() {
                       {items.map((item) => (
                         <div key={item.cartId} className="py-4 first:pt-0 flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
                           <div className="flex gap-4">
-                            <img src={item.image} alt={item.name} className="w-16 h-16 object-cover border border-gray-100 rounded-sm shrink-0" />
+                            <LazyImage src={item.image} alt={item.name} className="w-16 h-16 object-cover border border-gray-100 rounded-sm" wrapperClassName="shrink-0" />
                             <div>
                               <h4 className="font-bold text-fk-text text-sm line-clamp-1">{item.name}</h4>
                               <p className="text-xs text-fk-gray mt-1">Size: <span className="text-fk-text font-semibold">{item.selectedSize}</span> {item.selectedColour && <>| Colour: <span className="text-fk-text font-semibold">{item.selectedColour}</span></>}</p>
